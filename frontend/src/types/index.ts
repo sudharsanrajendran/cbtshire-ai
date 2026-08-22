@@ -21,10 +21,18 @@ export interface Candidate {
   experience_level?: string;
   location?: string;
   match_score: number;
+  match_explanation?: string;
   status: string;
   source?: string;
   applied_at: string;
   skills: string[];
+  resume_info?: {
+    filename?: string;
+    content_type?: string;
+    extracted_text?: string;
+    parsed_summary?: string;
+    storage_url?: string;
+  };
   assessment_info?: {
     assessment_id?: number;
     token: string;

@@ -774,17 +774,34 @@ def serialize_job(job: Job):
 
 def serialize_candidate(candidate: Candidate, db: Session = None):
     app_info = None
+    resume_info = None
+    match_explanation = None
+
     if db:
         app_obj = db.scalar(select(Application).where(Application.candidate_id == candidate.id).order_by(Application.id.desc()))
-        if app_obj and app_obj.assessment_token:
-            public_app_url = get_settings().public_app_url or 'http://127.0.0.1:5173'
-            app_info = {
-                'token': app_obj.assessment_token,
-                'assessment_link': f"{public_app_url}/assessment/{app_obj.assessment_token}",
-                'invited_at': app_obj.assessment_invited_at.isoformat() if app_obj.assessment_invited_at else None
+        if app_obj:
+            match_explanation = app_obj.match_explanation
+            if app_obj.assessment_token:
+                public_app_url = get_settings().public_app_url or 'https://cbtshire-ai.vercel.app'
+                app_info = {
+                    'token': app_obj.assessment_token,
+                    'assessment_link': f"{public_app_url}/assessment/{app_obj.assessment_token}",
+                    'invited_at': app_obj.assessment_invited_at.isoformat() if app_obj.assessment_invited_at else None
+                }
+
+        resume_obj = db.scalar(select(Resume).where(Resume.candidate_id == candidate.id).order_by(Resume.id.desc()))
+        if resume_obj:
+            resume_info = {
+                'filename': resume_obj.filename,
+                'content_type': resume_obj.content_type,
+                'extracted_text': resume_obj.extracted_text,
+                'parsed_summary': resume_obj.parsed_summary,
+                'storage_url': resume_obj.storage_url
             }
+
     skills_list = [s.strip() for s in candidate.skills.split(',') if s.strip()] if getattr(candidate, 'skills', None) else []
     exp_level = getattr(candidate, 'experience_level', 'Mid-level') or 'Mid-level'
+
     return {
         'id': candidate.id,
         'name': candidate.name,
@@ -793,9 +810,11 @@ def serialize_candidate(candidate: Candidate, db: Session = None):
         'experience_level': exp_level,
         'skills': skills_list,
         'match_score': candidate.match_score,
+        'match_explanation': match_explanation,
         'status': candidate.status,
         'source': getattr(candidate, 'source', 'Careers Portal') or 'Careers Portal',
         'applied_at': candidate.applied_at.isoformat(),
+        'resume_info': resume_info,
         'assessment_info': app_info
     }
 
