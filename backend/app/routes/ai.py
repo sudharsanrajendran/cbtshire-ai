@@ -31,38 +31,124 @@ class AssessmentInput(BaseModel): job: str; skills: str; difficulty: str = 'Inte
 class TextInput(BaseModel): context: str
 
 def generate_fallback_job_description(title: str, department: str, experience: str, skills: str) -> str:
-    role_title = title.strip() if title and title.strip() else "Specialist"
-    dept = department.strip() if department and department.strip() else "Operations"
-    exp = experience.strip() if experience and experience.strip() else "3+ years"
-    skills_list = [s.strip() for s in skills.split(',') if s.strip()] if skills else []
-    skills_str = ", ".join(skills_list) if skills_list else "Domain Expertise & Industry Best Practices"
+    role_title = title.strip() if title and title.strip() else "Professional"
+    dept = department.strip() if department and department.strip() else "Engineering"
+    exp = experience.strip() if experience and experience.strip() else "2-4 years"
     
-    bullets = "\n".join([f"• Demonstrated hands-on proficiency in {s}" for s in skills_list]) if skills_list else f"• Demonstrated professional competency in {role_title} workflows\n• Knowledge of relevant industry regulations, tools, and best practices"
+    # Get authentic domain skills if not provided
+    if skills and skills.strip():
+        skills_list = [s.strip() for s in skills.split(',') if s.strip()]
+    else:
+        skills_list = get_smart_skills_for_role(role_title, dept)
+    
+    skills_str = ", ".join(skills_list)
+    bullets = "\n".join([f"• Demonstrated hands-on proficiency in **{s}**" for s in skills_list])
+    lookup = f"{role_title} {dept}".lower()
 
-    return f"""### About the Role: {role_title}
-We are seeking an experienced and dedicated **{role_title}** to join our **{dept}** team. In this position, you will be responsible for driving excellence, executing core operational and technical requirements, and ensuring adherence to safety, quality, and industry standards in **{skills_str}**.
+    # 1. SOFTWARE & TECH ROLES (Java, Flutter, React, Python, Backend, Frontend, DevOps, etc.)
+    is_tech = any(k in lookup for k in ['java', 'python', 'flutter', 'react', 'developer', 'engineer', 'frontend', 'backend', 'fullstack', 'software', 'node', 'web', 'devops', 'qa', 'data', 'cloud'])
+    if is_tech and 'civil' not in lookup and 'mechanical' not in lookup and 'aviation' not in lookup:
+        return f"""### About the Role: {role_title}
+We are seeking an experienced and dedicated **{role_title}** to join our **{dept}** engineering team. In this position, you will be responsible for designing, developing, and deploying scalable, high-performance applications and backend/frontend systems utilizing **{skills_str}**.
 
 ### Key Responsibilities:
-• Lead and execute domain-specific responsibilities and operational tasks for {role_title}.
-• Apply hands-on expertise in **{skills_str}** to ensure high performance, accuracy, and reliability.
-• Coordinate with multidisciplinary teams, stakeholders, and regulatory bodies to deliver quality outcomes.
-• Troubleshoot, inspect, and optimize processes to uphold standard operating procedures and safety protocols.
-• Document workflows, review technical specifications, and champion continuous process improvement.
+• Design, build, and maintain clean, scalable, and testable code for {role_title} workflows.
+• Architect and integrate robust RESTful APIs, microservices, and database models using **{skills_str}**.
+• Collaborate with cross-functional engineering teams, UI/UX designers, and product managers to deliver features.
+• Write comprehensive automated unit and integration tests to ensure software stability and performance.
+• Troubleshoot production bugs, conduct thorough peer code reviews, and optimize application latency.
+• Champion continuous integration, continuous delivery (CI/CD), and modern agile best practices.
+
+### Required Qualifications & Experience:
+• **Experience:** {exp} of proven industry experience in software engineering and application development.
+• **Core Technical Skills:**
+{bullets}
+• Strong foundation in Object-Oriented Programming (OOP), software design patterns, and data structures.
+• Hands-on proficiency with Git version control and modern developer tooling.
+• Excellent analytical, debugging, and problem-solving abilities.
+
+### Preferred Qualifications:
+• Bachelor's or Master's degree in Computer Science, Information Technology, or equivalent practical experience.
+• Familiarity with cloud platforms (AWS / Azure / GCP) and containerization (Docker).
+
+### What We Offer:
+• Highly competitive compensation and benefits package.
+• Opportunity to work on cutting-edge technology and impactful software products.
+• Clear career progression pathways and continuous learning opportunities."""
+
+    # 2. AVIATION & AEROSPACE ROLES
+    if any(k in lookup for k in ['aviation', 'aircraft', 'mro', 'avionics', 'pilot', 'aerospace']):
+        return f"""### About the Role: {role_title}
+We are seeking a qualified and certified **{role_title}** to join our **{dept}** team. In this role, you will perform aircraft line and base maintenance, airframe and powerplant inspections, avionics troubleshooting, and ensure full compliance with civil aviation regulations utilizing **{skills_str}**.
+
+### Key Responsibilities:
+• Perform scheduled and unscheduled line maintenance, structural inspections, and system repairs on aircraft.
+• Inspect, test, and troubleshoot airframe, powerplant, and avionics components per manufacturer Aircraft Maintenance Manuals (AMM).
+• Ensure all maintenance tasks strictly comply with FAA / EASA / DGCA regulatory airworthiness standards.
+• Accurately sign off maintenance release certificates, technical logbooks, and work orders.
+• Uphold strict hangar safety procedures, Foreign Object Debris (FOD) prevention, and tool accountability.
+
+### Required Qualifications & Experience:
+• **Experience:** {exp} of hands-on aircraft maintenance experience.
+• **Core Domain Skills:**
+{bullets}
+• Valid A&P License, EASA Part-66 AME License, or relevant civil aviation certification.
+• In-depth knowledge of aircraft systems, maintenance documentation, and quality assurance.
+
+### Preferred Qualifications:
+• Specific aircraft type ratings and recurrent regulatory training certificates.
+
+### What We Offer:
+• Competitive compensation, shift allowances, and comprehensive medical insurance.
+• Professional aircraft type rating training and career growth opportunities."""
+
+    # 3. HEALTHCARE & MEDICAL ROLES
+    if any(k in lookup for k in ['nurse', 'doctor', 'medical', 'hospital', 'clinical', 'healthcare', 'physician']):
+        return f"""### About the Role: {role_title}
+We are seeking a compassionate and licensed **{role_title}** to join our **{dept}** healthcare team. In this position, you will deliver high-quality patient care, conduct assessments, and administer medical treatments using **{skills_str}**.
+
+### Key Responsibilities:
+• Provide comprehensive patient care, monitor vital signs, and administer medications per physician orders.
+• Conduct thorough clinical assessments and document patient history accurately in Electronic Health Records (EHR).
+• Collaborate with multidisciplinary healthcare teams to formulate and execute customized patient care plans.
+• Maintain strict adherence to infection control protocols, HIPAA compliance, and clinical safety standards.
+• Educate patients and their families on post-treatment care, recovery protocols, and wellness practices.
+
+### Required Qualifications & Experience:
+• **Experience:** {exp} of clinical experience in an accredited hospital or healthcare setting.
+• **Core Clinical Skills:**
+{bullets}
+• Active state medical/nursing license and valid BLS / ACLS certification.
+
+### What We Offer:
+• Comprehensive healthcare benefits, retirement plan, and competitive pay structure.
+• Continuing Medical Education (CME) assistance and professional growth programs."""
+
+    # 4. DEFAULT COMPREHENSIVE DOMAIN TEMPLATE
+    return f"""### About the Role: {role_title}
+We are seeking a talented and driven **{role_title}** to join our **{dept}** team. In this position, you will lead key operational and strategic initiatives, execute domain-specific workflows, and deliver measurable outcomes utilizing **{skills_str}**.
+
+### Key Responsibilities:
+• Execute end-to-end responsibilities and project deliverables for {role_title}.
+• Apply core expertise in **{skills_str}** to optimize efficiency, quality, and performance.
+• Collaborate with cross-functional stakeholders to align on strategic objectives and timelines.
+• Analyze operational data, troubleshoot challenges, and implement sustainable continuous improvements.
+• Document standard operating procedures (SOPs) and ensure strict compliance with industry standards.
 
 ### Required Qualifications & Experience:
 • **Experience:** {exp} of relevant industry experience in {dept} or related domains.
 • **Core Domain Skills:**
 {bullets}
-• Strong problem-solving, root-cause analysis, and critical thinking capabilities.
-• Excellent communication, collaboration, and professional reporting skills.
+• Strong analytical, strategic thinking, and problem-solving capabilities.
+• Excellent communication, presentation, and stakeholder collaboration skills.
 
 ### Preferred Qualifications:
-• Relevant degree, diploma, or recognized trade license/certification for {role_title}.
-• Familiarity with modern industry tooling, diagnostic instruments, and quality frameworks.
+• Relevant professional certifications or degree related to {role_title}.
+• Demonstrated track record of delivering successful projects in high-growth environments.
 
 ### What We Offer:
-• Competitive compensation and comprehensive benefits package.
-• Clear career progression pathways and continuous professional development."""
+• Competitive compensation, bonus structure, and comprehensive wellness benefits.
+• Clear career advancement pathways and supportive team culture."""
 
 DOMAIN_SKILLS_MAP = {
     'flutter': ['Flutter', 'Dart', 'Riverpod / BLoC', 'REST APIs', 'Firebase', 'State Management', 'Git', 'App Store & Play Store Publishing'],
