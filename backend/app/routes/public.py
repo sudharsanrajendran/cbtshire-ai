@@ -28,8 +28,41 @@ async def apply(job_id: int, name: str = Form(...), email: str = Form(...), phon
     if len(content) > 5 * 1024 * 1024: raise HTTPException(413, 'Resume must be 5 MB or smaller')
     with SessionLocal() as db:
         job = db.scalar(select(Job).where(Job.id == job_id, Job.status == 'published'))
-        if not job: raise HTTPException(404, 'Published job not found')
-        candidate = Candidate(organization_id=job.organization_id, name=name, email=email, role=job.title, status='Screening', source='Careers Portal')
+        if not job:
+            raise HTTPException(404, 'Published job not found')
+
+        extracted = extract_resume_text(content, file.content_type)
+        analysis = "Candidate resume submitted for recruiter review."
+        match_score = 75
+        exp_level = "Mid-level"
+        cand_skills = job.skills or ""
+
+        try:
+            ats_res = await evaluate_ats_match(extracted, job.title, job.experience_level, job.skills)
+            if ats_res.get('match_score'):
+                match_score = int(ats_res['match_score'])
+            if ats_res.get('extracted_skills'):
+                cand_skills = ', '.join(ats_res['extracted_skills'])
+            if ats_res.get('extracted_experience'):
+                exp_level = ats_res['extracted_experience']
+            if ats_res.get('explanation'):
+                analysis = ats_res['explanation']
+            else:
+                analysis = await analyze_resume(extracted)
+        except Exception:
+            pass
+
+        candidate = Candidate(
+            organization_id=job.organization_id,
+            name=name,
+            email=email,
+            role=job.title,
+            experience_level=exp_level,
+            skills=cand_skills,
+            status='Screening',
+            source='Careers Portal',
+            match_score=match_score
+        )
         db.add(candidate)
         db.flush()
 
@@ -40,13 +73,6 @@ async def apply(job_id: int, name: str = Form(...), email: str = Form(...), phon
             storage_key = f"resumes/{file.filename or 'resume'}"
             storage_url = ""
 
-        try:
-            extracted = extract_resume_text(content, file.content_type)
-            analysis = await analyze_resume(extracted)
-        except Exception:
-            extracted = ""
-            analysis = "Candidate resume submitted for recruiter review."
-
         db.add(Resume(candidate_id=candidate.id, filename=file.filename or 'resume', content_type=file.content_type, extracted_text=extracted, parsed_summary=analysis, storage_key=storage_key, storage_url=storage_url))
         
         assessment = db.scalar(select(Assessment).where(Assessment.organization_id == job.organization_id).order_by(Assessment.id.desc()))
@@ -56,19 +82,35 @@ async def apply(job_id: int, name: str = Form(...), email: str = Form(...), phon
             db.flush()
             
         owner = db.scalar(select(User).where(User.organization_id == job.organization_id).order_by(User.id))
-        application = Application(organization_id=job.organization_id, job_id=job.id, candidate_id=candidate.id, assessment_id=assessment.id, match_explanation=analysis, assessment_token=token_urlsafe(32), assessment_invited_at=datetime.utcnow())
+        application = Application(
+            organization_id=job.organization_id,
+            job_id=job.id,
+            candidate_id=candidate.id,
+            assessment_id=assessment.id,
+            match_score=match_score,
+            match_explanation=analysis,
+            assessment_token=token_urlsafe(32),
+            status='Under Review'
+        )
         db.add(application)
         if owner:
-            db.add(Notification(user_id=owner.id, title='New candidate application', message=f'{name} applied for {job.title}.'))
+            db.add(Notification(
+                user_id=owner.id,
+                title='New Candidate Application',
+                message=f'{name} applied for {job.title} ({match_score}% ATS Match). Review candidate to send assessment.'
+            ))
         db.commit()
 
-        link = f"{get_settings().public_app_url}/assessment/{application.assessment_token}"
-        try:
-            emailed = send_assessment_invite(email, name, job.title, link)
-        except Exception:
-            emailed = False
-
-        return {'application_id': application.id, 'candidate_id': candidate.id, 'assessment_link': link, 'email_sent': emailed, 'ai_summary': analysis, 'review_required': True}
+        # NOTE: Candidate is queued in Screening / Under Review for recruiter approval.
+        # Assessment link will be sent when recruiter reviews and approves from Candidates dashboard.
+        return {
+            'application_id': application.id,
+            'candidate_id': candidate.id,
+            'match_score': match_score,
+            'status': 'Screening',
+            'ai_summary': analysis,
+            'message': 'Application received successfully! Our recruitment team will review your profile and contact you.'
+        }
 
 @router.get('/assessments/{token}')
 def public_assessment(token: str):

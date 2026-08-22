@@ -457,6 +457,7 @@ def update_candidate_status(candidate_id: int, status: str, user: User = Depends
     candidate = get_org(db, Candidate, candidate_id, user.organization_id); candidate.status = status; db.commit(); db.refresh(candidate)
     return serialize_candidate(candidate, db)
 
+@router.post('/candidates/{candidate_id}/send-assessment')
 @router.post('/candidates/{candidate_id}/resend-assessment')
 def resend_candidate_assessment(candidate_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
     candidate = get_org(db, Candidate, candidate_id, user.organization_id)
@@ -484,21 +485,23 @@ def resend_candidate_assessment(candidate_id: int, user: User = Depends(current_
             candidate_id=candidate.id,
             assessment_id=assessment.id,
             status='Assessment',
-            match_explanation='Assessment created for resending invitation.',
+            match_explanation='Assessment created for invitation.',
             assessment_token=new_token,
             assessment_invited_at=datetime.utcnow()
         )
         db.add(application)
         db.flush()
 
-    public_app_url = get_settings().public_app_url or 'http://127.0.0.1:5173'
+    public_app_url = get_settings().public_app_url or 'https://cbtshire-ai.vercel.app'
     assessment_link = f"{public_app_url}/assessment/{application.assessment_token}"
     application.assessment_invited_at = datetime.utcnow()
+    application.status = 'Assessment'
+    candidate.status = 'Assessment Sent'
 
     db.add(Notification(
         user_id=user.id,
-        title='Assessment Link Resent',
-        message=f"Assessment invite link resent to {candidate.name} ({candidate.email})."
+        title='Assessment Invite Sent',
+        message=f"Assessment invite link sent to {candidate.name} ({candidate.email})."
     ))
     db.commit()
 
@@ -512,7 +515,7 @@ def resend_candidate_assessment(candidate_id: int, user: User = Depends(current_
         'email': candidate.email,
         'assessment_link': assessment_link,
         'email_sent': email_sent,
-        'message': f"Assessment link successfully resent to {candidate.email}"
+        'message': f"Assessment link successfully emailed to {candidate.email}"
     }
 
 @router.get('/assessments')

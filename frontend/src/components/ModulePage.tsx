@@ -509,6 +509,7 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
       const res = await resendAssessmentLink(candidateId);
       setResendResult(res);
       setResendModalOpen(true);
+      await reload();
     } catch (err) {
       console.error(err);
     } finally {
@@ -969,17 +970,31 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
                         >
                           📅 Schedule Interview
                         </Button>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="primary"
-                          startIcon={resendingId === (item as Candidate).id ? <CircularProgress size={14} color="inherit" /> : <SendRoundedIcon />}
-                          onClick={() => void handleResendAssessment((item as Candidate).id)}
-                          disabled={resendingId === (item as Candidate).id}
-                          sx={{ fontWeight: 700, borderRadius: 2 }}
-                        >
-                          {resendingId === (item as Candidate).id ? 'Resending...' : 'Resend Link'}
-                        </Button>
+                        {((item as Candidate).status === 'Screening' || (item as Candidate).status === 'Applied' || !(item as Candidate).status) ? (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="primary"
+                            startIcon={resendingId === (item as Candidate).id ? <CircularProgress size={14} color="inherit" /> : <SendRoundedIcon />}
+                            onClick={() => void handleResendAssessment((item as Candidate).id)}
+                            disabled={resendingId === (item as Candidate).id}
+                            sx={{ fontWeight: 700, borderRadius: 2 }}
+                          >
+                            {resendingId === (item as Candidate).id ? 'Sending...' : '✨ Send Assessment Link'}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                            startIcon={resendingId === (item as Candidate).id ? <CircularProgress size={14} color="inherit" /> : <SendRoundedIcon />}
+                            onClick={() => void handleResendAssessment((item as Candidate).id)}
+                            disabled={resendingId === (item as Candidate).id}
+                            sx={{ fontWeight: 700, borderRadius: 2 }}
+                          >
+                            {resendingId === (item as Candidate).id ? 'Resending...' : '🔁 Resend Link'}
+                          </Button>
+                        )}
                       </Stack>
                     )}
                     {kind === 'assessments' && (
