@@ -374,6 +374,7 @@ async def process_external_candidate(platform: str, name: str, email: str, role:
         email=email,
         role=role_title,
         status='Screening',
+        source=platform,
         match_score=match_score
     )
     db.add(candidate)

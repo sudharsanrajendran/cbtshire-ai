@@ -50,6 +50,7 @@ class Candidate(Base):
     experience_level: Mapped[str] = mapped_column(String(60), default='Mid-level')
     skills: Mapped[str] = mapped_column(Text, default='')
     status: Mapped[str] = mapped_column(String(40), default='Applied')
+    source: Mapped[str] = mapped_column(String(60), default='Careers Portal')
     match_score: Mapped[int] = mapped_column(Integer, default=0)
     applied_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

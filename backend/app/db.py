@@ -16,7 +16,7 @@ def ensure_sqlite_schema() -> None:
         return
     additions = {
         'jobs': {'employment_type': "VARCHAR(40) DEFAULT 'Full-time'", 'experience_level': "VARCHAR(60) DEFAULT 'Mid-level'", 'skills': "TEXT DEFAULT ''"},
-        'candidates': {'role': "VARCHAR(160) DEFAULT ''", 'experience_level': "VARCHAR(60) DEFAULT 'Mid-level'", 'skills': "TEXT DEFAULT ''", 'match_score': "INTEGER DEFAULT 0"},
+        'candidates': {'role': "VARCHAR(160) DEFAULT ''", 'experience_level': "VARCHAR(60) DEFAULT 'Mid-level'", 'skills': "TEXT DEFAULT ''", 'match_score': "INTEGER DEFAULT 0", 'source': "VARCHAR(60) DEFAULT 'Careers Portal'"},
         'resumes': {'storage_key': "VARCHAR(500) DEFAULT ''", 'storage_url': "VARCHAR(1000) DEFAULT ''"},
         'users': {
             'linkedin_profile_url': "VARCHAR(255) DEFAULT ''",

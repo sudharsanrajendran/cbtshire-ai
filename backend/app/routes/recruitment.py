@@ -32,6 +32,7 @@ class CandidateInput(BaseModel):
     experience_level: str = 'Mid-level'
     skills: list[str] = []
     status: str = 'Applied'
+    source: str = 'Careers Portal'
     match_score: int = Field(default=0, ge=0, le=100)
     job_id: int | None = None
     auto_send_assessment: bool = False
@@ -110,6 +111,7 @@ async def create_candidate(payload: CandidateInput, user: User = Depends(current
         experience_level=payload.experience_level or 'Mid-level',
         skills=skills_joined,
         status=payload.status,
+        source=payload.source or 'Direct',
         match_score=payload.match_score
     )
     db.add(candidate)
@@ -789,6 +791,7 @@ def serialize_candidate(candidate: Candidate, db: Session = None):
         'skills': skills_list,
         'match_score': candidate.match_score,
         'status': candidate.status,
+        'source': getattr(candidate, 'source', 'Careers Portal') or 'Careers Portal',
         'applied_at': candidate.applied_at.isoformat(),
         'assessment_info': app_info
     }

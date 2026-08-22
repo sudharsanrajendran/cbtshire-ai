@@ -29,7 +29,7 @@ async def apply(job_id: int, name: str = Form(...), email: str = Form(...), phon
     with SessionLocal() as db:
         job = db.scalar(select(Job).where(Job.id == job_id, Job.status == 'published'))
         if not job: raise HTTPException(404, 'Published job not found')
-        candidate = Candidate(organization_id=job.organization_id, name=name, email=email, role=job.title, status='Screening')
+        candidate = Candidate(organization_id=job.organization_id, name=name, email=email, role=job.title, status='Screening', source='Careers Portal')
         db.add(candidate); db.flush()
         try: storage_key, storage_url = CloudStorage().upload(content, file.filename or 'resume', file.content_type)
         except RuntimeError as error: raise HTTPException(503, str(error)) from error

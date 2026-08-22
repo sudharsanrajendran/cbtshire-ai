@@ -22,6 +22,7 @@ export interface Candidate {
   location?: string;
   match_score: number;
   status: string;
+  source?: string;
   applied_at: string;
   skills: string[];
   assessment_info?: {

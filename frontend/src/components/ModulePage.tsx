@@ -69,6 +69,123 @@ const labels = {
 
 type RecordItem = Job | Candidate | Assessment | Offer;
 
+export const renderPlatformSourceBadge = (source?: string) => {
+  const s = (source || 'Careers Portal').toLowerCase();
+  if (s.includes('linkedin')) {
+    return (
+      <Chip
+        icon={
+          <Box
+            sx={{
+              width: 15,
+              height: 15,
+              borderRadius: 0.5,
+              bgcolor: '#0a66c2',
+              color: '#fff',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 9,
+              fontWeight: 900,
+              ml: '4px !important'
+            }}
+          >
+            in
+          </Box>
+        }
+        label="LinkedIn"
+        size="small"
+        sx={{
+          fontWeight: 800,
+          fontSize: 11,
+          bgcolor: '#e8f3fc',
+          color: '#0a66c2',
+          border: '1px solid #bfdbfe'
+        }}
+      />
+    );
+  }
+  if (s.includes('naukri')) {
+    return (
+      <Chip
+        icon={
+          <Box
+            sx={{
+              width: 15,
+              height: 15,
+              borderRadius: 0.5,
+              bgcolor: '#4a00e0',
+              color: '#fff',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 9,
+              fontWeight: 900,
+              ml: '4px !important'
+            }}
+          >
+            N
+          </Box>
+        }
+        label="Naukri"
+        size="small"
+        sx={{
+          fontWeight: 800,
+          fontSize: 11,
+          bgcolor: '#f5f3ff',
+          color: '#4a00e0',
+          border: '1px solid #ddd6fe'
+        }}
+      />
+    );
+  }
+  if (s.includes('indeed')) {
+    return (
+      <Chip
+        icon={
+          <Box
+            sx={{
+              width: 15,
+              height: 15,
+              borderRadius: 0.5,
+              bgcolor: '#2557a7',
+              color: '#fff',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 9,
+              fontWeight: 900,
+              ml: '4px !important'
+            }}
+          >
+            I
+          </Box>
+        }
+        label="Indeed"
+        size="small"
+        sx={{
+          fontWeight: 800,
+          fontSize: 11,
+          bgcolor: '#eff6ff',
+          color: '#1d4ed8',
+          border: '1px solid #bfdbfe'
+        }}
+      />
+    );
+  }
+  return (
+    <Chip
+      icon={<LanguageRoundedIcon sx={{ fontSize: '15px !important', color: '#087f8c !important', ml: '4px !important' }} />}
+      label="Careers Page"
+      size="small"
+      sx={{
+        fontWeight: 800,
+        fontSize: 11,
+        bgcolor: '#f0fdfa',
+        color: '#0f766e',
+        border: '1px solid #99f6e4'
+      }}
+    />
+  );
+};
+
 export function ModulePage({ kind }: { kind: ModuleKind }) {
   if (kind === 'interviews') return <InterviewPage />;
   
@@ -750,8 +867,11 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
                   )}
                   {kind === 'candidates' && (
                     <Box>
-                      <Typography fontWeight={800}>{(item as Candidate).name}</Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Stack direction="row" alignItems="center" spacing={1.2} flexWrap="wrap">
+                        <Typography fontWeight={800} sx={{ fontSize: 16 }}>{(item as Candidate).name}</Typography>
+                        {renderPlatformSourceBadge((item as Candidate).source)}
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.3 }}>
                         {(item as Candidate).role} · {(item as Candidate).email}
                       </Typography>
                       <Stack direction="row" spacing={0.8} alignItems="center" flexWrap="wrap" sx={{ mt: 0.8, gap: 0.5 }}>
