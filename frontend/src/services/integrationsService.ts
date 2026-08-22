@@ -1,7 +1,4 @@
-import axios from 'axios';
-
-const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-const API_BASE = `http://${hostname}:8000/api`;
+import { api } from './api';
 
 export interface SimulatePayload {
   platform: 'linkedin' | 'naukri' | 'indeed' | 'website';
@@ -37,10 +34,7 @@ export interface SimulationResult {
 }
 
 export async function simulateCandidateIngestion(payload: SimulatePayload): Promise<SimulationResult> {
-  const token = localStorage.getItem('cbtshire_token') || localStorage.getItem('northstar_token');
-  const response = await axios.post<SimulationResult>(`${API_BASE}/integrations/simulate`, payload, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  const response = await api.post<SimulationResult>('/integrations/simulate', payload);
   return response.data;
 }
 
@@ -72,7 +66,6 @@ export interface LinkedInPostResponse {
 }
 
 export async function generateLinkedInJobPost(params?: JobPostRequestParams): Promise<LinkedInPostResponse> {
-  const token = localStorage.getItem('cbtshire_token') || localStorage.getItem('northstar_token');
   const payload = {
     profile_url: params?.profile_url || '',
     job_id: params?.job_id,
@@ -82,11 +75,7 @@ export async function generateLinkedInJobPost(params?: JobPostRequestParams): Pr
     location: params?.location,
     description: params?.description
   };
-  const response = await axios.post<LinkedInPostResponse>(
-    `${API_BASE}/integrations/linkedin/post-job`,
-    payload,
-    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-  );
+  const response = await api.post<LinkedInPostResponse>('/integrations/linkedin/post-job', payload);
   return response.data;
 }
 
@@ -109,7 +98,6 @@ export interface PlatformPostResponse {
 }
 
 export async function generateNaukriJobPost(params?: JobPostRequestParams): Promise<PlatformPostResponse> {
-  const token = localStorage.getItem('cbtshire_token') || localStorage.getItem('northstar_token');
   const payload = {
     job_id: params?.job_id,
     position_name: params?.position_name,
@@ -118,16 +106,11 @@ export async function generateNaukriJobPost(params?: JobPostRequestParams): Prom
     location: params?.location,
     description: params?.description
   };
-  const response = await axios.post<PlatformPostResponse>(
-    `${API_BASE}/integrations/naukri/post-job`,
-    payload,
-    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-  );
+  const response = await api.post<PlatformPostResponse>('/integrations/naukri/post-job', payload);
   return response.data;
 }
 
 export async function generateIndeedJobPost(params?: JobPostRequestParams): Promise<PlatformPostResponse> {
-  const token = localStorage.getItem('cbtshire_token') || localStorage.getItem('northstar_token');
   const payload = {
     job_id: params?.job_id,
     position_name: params?.position_name,
@@ -136,10 +119,6 @@ export async function generateIndeedJobPost(params?: JobPostRequestParams): Prom
     location: params?.location,
     description: params?.description
   };
-  const response = await axios.post<PlatformPostResponse>(
-    `${API_BASE}/integrations/indeed/post-job`,
-    payload,
-    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-  );
+  const response = await api.post<PlatformPostResponse>('/integrations/indeed/post-job', payload);
   return response.data;
 }
