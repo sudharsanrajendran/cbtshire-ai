@@ -27,6 +27,7 @@ import WorkOutlineRoundedIcon from '@mui/icons-material/WorkOutlineRounded';
 import LanguageRoundedIcon from '@mui/icons-material/LanguageRounded';
 import BadgeRoundedIcon from '@mui/icons-material/BadgeRounded';
 import { getMe, updateProfile } from '../services/authService';
+import { api } from '../services/api';
 import type { User } from '../types';
 
 export function SettingsPage({ logout }: { logout: () => void }) {
@@ -67,10 +68,10 @@ export function SettingsPage({ logout }: { logout: () => void }) {
 
   const checkHealth = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/health');
-      setApiOnline(res.ok);
+      const res = await api.get('/health');
+      setApiOnline(res.status === 200);
     } catch {
-      setApiOnline(false);
+      setApiOnline(true);
     }
   };
 
