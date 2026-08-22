@@ -64,6 +64,61 @@ We are seeking an experienced and dedicated **{role_title}** to join our **{dept
 • Competitive compensation and comprehensive benefits package.
 • Clear career progression pathways and continuous professional development."""
 
+DOMAIN_SKILLS_MAP = {
+    'flutter': ['Flutter', 'Dart', 'Riverpod / BLoC', 'REST APIs', 'Firebase', 'State Management', 'Git', 'App Store & Play Store Publishing'],
+    'react': ['React.js', 'TypeScript', 'Next.js', 'Redux Toolkit / Zustand', 'Tailwind CSS', 'REST / GraphQL APIs', 'HTML5 & CSS3', 'Vite / Webpack'],
+    'frontend': ['JavaScript (ES6+)', 'TypeScript', 'React / Vue', 'CSS3 & Responsive Design', 'HTML5 Semantic Markup', 'REST APIs', 'Web Performance Optimization'],
+    'backend': ['Python / Node.js', 'RESTful API Design', 'PostgreSQL / MySQL', 'Redis & Caching', 'Docker', 'Authentication (JWT/OAuth)', 'Microservices Architecture'],
+    'python': ['Python 3', 'FastAPI / Django', 'PostgreSQL', 'SQLAlchemy / ORM', 'Docker', 'REST APIs', 'Celery & Redis', 'Unit Testing (pytest)'],
+    'java': ['Java 17+', 'Spring Boot', 'Microservices', 'Hibernate / JPA', 'PostgreSQL / Oracle', 'Kafka', 'Maven / Gradle', 'Docker'],
+    'node': ['Node.js', 'Express.js / NestJS', 'TypeScript', 'MongoDB / PostgreSQL', 'RESTful APIs', 'JWT Authentication', 'Redis', 'Docker'],
+    'aviation': ['Aircraft Maintenance (A&P)', 'FAA / EASA Regulations', 'Line & Base Maintenance', 'Avionics Diagnostics', 'Airframe & Powerplant Inspection', 'Standard Operating Procedures'],
+    'aircraft': ['Aircraft Maintenance (A&P)', 'FAA / EASA Regulations', 'Airframe Overhaul', 'Powerplant Inspection', 'Avionics Systems', 'Safety Compliance'],
+    'mro': ['MRO Operations', 'Aviation Safety Regulations', 'Structural Airframe Repair', 'Engine Overhaul', 'Component Diagnostics', 'Technical Logbook Documentation'],
+    'mechanical': ['SolidWorks / CATIA', 'Thermodynamics', 'Finite Element Analysis (FEA)', 'GD&T', 'Manufacturing Processes', 'HVAC Systems', 'Materials Engineering'],
+    'civil': ['AutoCAD', 'STAAD Pro / ETABS', 'Structural Design', 'Construction Site Management', 'Quantity Estimation', 'Concrete & Steel Standards', 'Surveying'],
+    'electrical': ['Circuit Design & PCB', 'MATLAB / Simulink', 'Power Systems', 'PLC Programming', 'AutoCAD Electrical', 'Safety Compliance (IEEE/IEC)', 'Microcontrollers'],
+    'doctor': ['Clinical Diagnosis', 'Patient Care & Assessment', 'Medical Record Documentation', 'Emergency Medical Procedures', 'Treatment Planning', 'Pharmacology'],
+    'nurse': ['Patient Care', 'Vital Signs Monitoring', 'Medication Administration', 'BLS / ACLS Certification', 'Clinical Charting (EHR)', 'Wound Care & Infection Control'],
+    'healthcare': ['Patient Assessment', 'Healthcare Compliance (HIPAA)', 'Clinical Protocols', 'Medical Terminology', 'Electronic Health Records (EHR)', 'Patient Safety'],
+    'digital marketing': ['Search Engine Optimization (SEO)', 'Google Ads / PPC', 'Meta Ads Manager', 'Google Analytics 4', 'Content Strategy', 'Copywriting & Campaign Optimization'],
+    'marketing': ['Digital Marketing Strategy', 'SEO & Content Marketing', 'Social Media Management', 'Campaign Analytics (GA4)', 'Brand Development', 'Email Marketing Automation'],
+    'sales': ['B2B Sales Outreach', 'Lead Generation & Prospecting', 'CRM (Salesforce / HubSpot)', 'Client Relationship Management', 'Negotiation & Closing', 'Pipeline Tracking'],
+    'business development': ['Market Research & Expansion', 'B2B Client Acquisition', 'Partnership Building', 'Lead Generation', 'Contract Negotiation', 'Revenue Forecasting'],
+    'accountant': ['Financial Statement Preparation', 'General Ledger & Journal Entries', 'Tax Compliance & Filing', 'QuickBooks / Tally ERP', 'Accounts Payable & Receivable', 'Auditing & Reconciliation'],
+    'finance': ['Financial Modeling & Valuation', 'Budgeting & Forecasting', 'Excel (Advanced Formulas & Pivot)', 'Financial Reporting', 'Risk Management', 'Variance Analysis'],
+    'graphic designer': ['Adobe Photoshop', 'Adobe Illustrator', 'Typography & Layout Design', 'Branding & Identity', 'Figma', 'Visual Storytelling', 'Print & Digital Production'],
+    'ui/ux': ['Figma / Adobe XD', 'Wireframing & Prototyping', 'User Research & Personas', 'Design Systems', 'Usability Testing', 'Information Architecture', 'Interaction Design'],
+    'product manager': ['Product Roadmap Development', 'Agile / Scrum Methodology', 'User Story Writing & Backlog Grooming', 'Market & Competitor Analysis', 'Data-Driven Prioritization', 'A/B Testing & Product Metrics'],
+    'project manager': ['Project Planning & Scheduling', 'Agile / Scrum / Waterfall', 'Risk Management & Mitigation', 'Resource Allocation & Budgeting', 'Stakeholder Management', 'Jira / Asana / MS Project'],
+    'human resources': ['Talent Acquisition & Sourcing', 'Candidate Screening & Interviewing', 'Employee Onboarding & Relations', 'HR Compliance & Labor Laws', 'HRIS / ATS Management', 'Performance Management'],
+    'hr': ['Talent Sourcing & Recruitment', 'ATS Systems Management', 'Interview Coordination', 'Employee Engagement & Relations', 'Onboarding & Induction', 'HR Policies & Documentation'],
+    'data scientist': ['Python & R', 'Machine Learning (Scikit-Learn, XGBoost)', 'Pandas, NumPy & Data Wrangling', 'SQL & Relational Databases', 'Data Visualization (Tableau / PowerBI)', 'Statistical Modeling & Hypothesis Testing'],
+    'data analyst': ['SQL (Complex Queries & Joins)', 'PowerBI / Tableau', 'Advanced Microsoft Excel', 'Data Cleaning & Preprocessing', 'Business Intelligence Reporting', 'Exploratory Data Analysis (EDA)'],
+    'devops': ['CI/CD Pipelines (GitHub Actions / GitLab)', 'Docker & Kubernetes', 'AWS / Azure Cloud Services', 'Infrastructure as Code (Terraform)', 'Linux System Administration', 'Monitoring (Prometheus & Grafana)', 'Bash Scripting'],
+    'qa': ['Manual Test Case Design', 'Automated Testing (Selenium / Cypress / Playwright)', 'API Testing (Postman)', 'Bug Tracking (Jira)', 'Regression & Smoke Testing', 'Quality Assurance Best Practices'],
+    'teacher': ['Curriculum Planning & Development', 'Classroom Management', 'Student Assessment & Evaluation', 'Differentiated Instruction', 'Educational Technology Tools', 'Parent-Teacher Communication']
+}
+
+def get_smart_skills_for_role(title: str, dept: str) -> list[str]:
+    lookup = f"{title} {dept}".lower()
+    for key, skills in DOMAIN_SKILLS_MAP.items():
+        if key in lookup:
+            return skills
+    # Partial token matching
+    tokens = lookup.split()
+    for token in tokens:
+        if len(token) >= 3 and token in DOMAIN_SKILLS_MAP:
+            return DOMAIN_SKILLS_MAP[token]
+    return [
+        f"{title.strip().title()} Core Execution",
+        "Industry Best Practices",
+        "Quality & Safety Compliance",
+        "Process Optimization",
+        "Cross-functional Collaboration",
+        "Technical Reporting & Documentation"
+    ]
+
 @router.post('/suggest-skills')
 async def suggest_skills(payload: SuggestSkillsInput, _: User = Depends(current_user)):
     clean_title = payload.title.strip() if payload.title else "Professional"
@@ -96,11 +151,13 @@ async def suggest_skills(payload: SuggestSkillsInput, _: User = Depends(current_
                     'role': clean_title
                 }
     except Exception as e:
-        print("[Suggest Skills Error]:", e)
+        print("[Suggest Skills AI Error]:", e)
 
+    # Fallback to authentic domain-specific dictionary
+    fallback_skills = get_smart_skills_for_role(clean_title, clean_dept)
     return {
-        'skills': [f"{clean_title} Core Competencies", "Industry Quality Standards", "Process Optimization", "Safety & Compliance"],
-        'skills_str': f"{clean_title} Core Competencies, Industry Quality Standards, Process Optimization, Safety & Compliance",
+        'skills': fallback_skills,
+        'skills_str': ', '.join(fallback_skills),
         'role': clean_title
     }
 
