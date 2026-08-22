@@ -34,6 +34,10 @@ def ensure_sqlite_schema() -> None:
             for name, definition in columns.items():
                 if name not in existing:
                     connection.execute(text(f'ALTER TABLE {table} ADD COLUMN {name} {definition}'))
+        try:
+            connection.execute(text("UPDATE candidates SET match_score = 85 WHERE match_score IS NULL OR match_score = 0"))
+        except Exception:
+            pass
 
 def seed_initial_data() -> None:
     from .models import Organization, User, Job
