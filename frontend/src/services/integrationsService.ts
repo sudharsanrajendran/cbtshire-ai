@@ -50,6 +50,7 @@ export interface JobPostRequestParams {
   skills?: string;
   location?: string;
   profile_url?: string;
+  description?: string;
   job_id?: number;
 }
 
@@ -73,12 +74,13 @@ export interface LinkedInPostResponse {
 export async function generateLinkedInJobPost(params?: JobPostRequestParams): Promise<LinkedInPostResponse> {
   const token = localStorage.getItem('cbtshire_token') || localStorage.getItem('northstar_token');
   const payload = {
-    profile_url: params?.profile_url || 'https://www.linkedin.com/in/sudharsanajendran/',
+    profile_url: params?.profile_url || '',
     job_id: params?.job_id,
     position_name: params?.position_name,
     experience: params?.experience,
     skills: params?.skills,
-    location: params?.location
+    location: params?.location,
+    description: params?.description
   };
   const response = await axios.post<LinkedInPostResponse>(
     `${API_BASE}/integrations/linkedin/post-job`,
@@ -113,7 +115,8 @@ export async function generateNaukriJobPost(params?: JobPostRequestParams): Prom
     position_name: params?.position_name,
     experience: params?.experience,
     skills: params?.skills,
-    location: params?.location
+    location: params?.location,
+    description: params?.description
   };
   const response = await axios.post<PlatformPostResponse>(
     `${API_BASE}/integrations/naukri/post-job`,
@@ -130,7 +133,8 @@ export async function generateIndeedJobPost(params?: JobPostRequestParams): Prom
     position_name: params?.position_name,
     experience: params?.experience,
     skills: params?.skills,
-    location: params?.location
+    location: params?.location,
+    description: params?.description
   };
   const response = await axios.post<PlatformPostResponse>(
     `${API_BASE}/integrations/indeed/post-job`,

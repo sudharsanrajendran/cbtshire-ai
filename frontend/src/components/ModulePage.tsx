@@ -35,12 +35,14 @@ import WorkOutlineRoundedIcon from '@mui/icons-material/WorkOutlineRounded';
 import LanguageRoundedIcon from '@mui/icons-material/LanguageRounded';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import EventRoundedIcon from '@mui/icons-material/EventRounded';
+import LaunchRoundedIcon from '@mui/icons-material/LaunchRounded';
 import type { Assessment, Candidate, Job, Offer } from '../types';
 import { useRecruitment } from '../hooks/useRecruitment';
 import { createJob, updateJob, deleteJob, updateJobStatus, getJobs } from '../services/jobService';
 import { createCandidate, resendAssessmentLink, parseCandidateResume, type ResendAssessmentResult } from '../services/candidateService';
 import { createOffer } from '../services/offerService';
 import { createInterview } from '../services/interviewService';
+import { getMe } from '../services/authService';
 import {
   createAssessment,
   createAssessmentFromResume,
@@ -408,9 +410,11 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
   const [naukriEnabled, setNaukriEnabled] = useState(true);
   const [indeedEnabled, setIndeedEnabled] = useState(true);
   const [websiteEnabled, setWebsiteEnabled] = useState(true);
-  const [linkedinProfile, setLinkedinProfile] = useState('https://www.linkedin.com/in/sudharsanajendran/');
+  const [linkedinProfile, setLinkedinProfile] = useState('');
   const [distributing, setDistributing] = useState(false);
   const [distributionSuccess, setDistributionSuccess] = useState<string | null>(null);
+  const [generatedLinkedInPost, setGeneratedLinkedInPost] = useState<{ post_text: string; targetUrl: string } | null>(null);
+  const [copiedLinkedIn, setCopiedLinkedIn] = useState(false);
 
   useEffect(() => {
     if (kind === 'assessments') {
@@ -569,6 +573,14 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
     } else {
       setTargetJob(job);
       setDistributionSuccess(null);
+      setGeneratedLinkedInPost(null);
+      setCopiedLinkedIn(false);
+      try {
+        const u = await getMe();
+        if (u?.linkedin_profile_url) {
+          setLinkedinProfile(u.linkedin_profile_url);
+        }
+      } catch {}
       setDistributionOpen(true);
     }
   };
@@ -578,21 +590,42 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
     if (!targetJob) return;
     setDistributing(true);
     setDistributionSuccess(null);
+    setGeneratedLinkedInPost(null);
+    setCopiedLinkedIn(false);
+
     try {
       await updateJobStatus(targetJob.id, 'published');
 
-      let successMsg = `Job "${targetJob.title}" status changed to Published! `;
+      let successMsg = `Job "${targetJob.title}" status updated to Published! `;
       
       if (linkedinEnabled) {
-        const linkedinRes = await generateLinkedInJobPost({ profile_url: linkedinProfile, job_id: targetJob.id });
-        navigator.clipboard.writeText(linkedinRes.post_text);
+        const linkedinRes = await generateLinkedInJobPost({
+          profile_url: linkedinProfile || undefined,
+          job_id: targetJob.id,
+          description: targetJob.description || ''
+        });
         const targetUrl = linkedinRes.feed_share_url || linkedinRes.share_url;
-        window.open(targetUrl, '_blank');
-        successMsg += `LinkedIn Post Text copied & share box opened! `;
+        setGeneratedLinkedInPost({ post_text: linkedinRes.post_text, targetUrl });
+
+        try {
+          await navigator.clipboard.writeText(linkedinRes.post_text);
+          setCopiedLinkedIn(true);
+        } catch {
+          // ignore
+        }
+
+        // Try direct browser open
+        try {
+          window.open(targetUrl, '_blank');
+        } catch {
+          // ignore
+        }
+
+        successMsg += `LinkedIn post copy generated & ready! `;
       }
 
       if (naukriEnabled) {
-        successMsg += `Naukri e-Apps queue synced. `;
+        successMsg += `Naukri e-Apps synced. `;
       }
       if (indeedEnabled) {
         successMsg += `Indeed XML Feed updated. `;
@@ -603,8 +636,9 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
 
       setDistributionSuccess(successMsg);
       await reload();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setDistributionSuccess(`Job status updated, but share encountered an issue: ${err?.response?.data?.detail || err?.message}`);
     } finally {
       setDistributing(false);
     }
@@ -1391,14 +1425,96 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
             </Paper>
 
             {distributionSuccess && (
-              <Alert severity="success" sx={{ fontSize: 13 }}>
-                {distributionSuccess}
-                {linkedinEnabled && (
-                  <Box sx={{ mt: 1, fontWeight: 700 }}>
-                    📋 LinkedIn Post Text copied! Simply press <b>Ctrl + V (Paste)</b> inside the LinkedIn post box!
-                  </Box>
+              <Stack spacing={2}>
+                <Alert severity="success" sx={{ fontSize: 13, fontWeight: 600 }}>
+                  {distributionSuccess}
+                </Alert>
+
+                {generatedLinkedInPost && (
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2.5,
+                      borderRadius: 2,
+                      bgcolor: '#f8fafc',
+                      borderColor: '#0a66c2',
+                      borderWidth: 2
+                    }}
+                  >
+                    <Stack spacing={2}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <LinkedInIcon sx={{ color: '#0a66c2', fontSize: 28 }} />
+                          <Typography variant="subtitle2" fontWeight={800} color="#0a66c2">
+                            LinkedIn Post Ready
+                          </Typography>
+                        </Stack>
+                        <Chip
+                          label={copiedLinkedIn ? "Copied to Clipboard!" : "Ready to Share"}
+                          color={copiedLinkedIn ? "success" : "primary"}
+                          size="small"
+                          sx={{ fontWeight: 700 }}
+                        />
+                      </Stack>
+
+                      {/* Prominent Action Buttons */}
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          startIcon={<LaunchRoundedIcon />}
+                          onClick={() => window.open(generatedLinkedInPost.targetUrl, '_blank')}
+                          sx={{
+                            bgcolor: '#0a66c2',
+                            color: '#fff',
+                            fontWeight: 700,
+                            py: 1.2,
+                            '&:hover': { bgcolor: '#004182' }
+                          }}
+                        >
+                          Open LinkedIn Post Box
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          fullWidth
+                          startIcon={<ContentCopyRoundedIcon />}
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(generatedLinkedInPost.post_text);
+                            setCopiedLinkedIn(true);
+                            setTimeout(() => setCopiedLinkedIn(false), 3000);
+                          }}
+                          sx={{ fontWeight: 700, py: 1.2 }}
+                        >
+                          {copiedLinkedIn ? 'Copied!' : 'Copy Post Content'}
+                        </Button>
+                      </Stack>
+
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        💡 Click <b>"Open LinkedIn Post Box"</b> above, then press <b>Ctrl + V (Paste)</b> inside LinkedIn to share this position with your followers!
+                      </Typography>
+
+                      {/* Post Text Preview with Description */}
+                      <Box
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 1.5,
+                          bgcolor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          maxHeight: 180,
+                          overflowY: 'auto',
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                          whiteSpace: 'pre-wrap',
+                          lineHeight: 1.5,
+                          color: '#334155'
+                        }}
+                      >
+                        {generatedLinkedInPost.post_text}
+                      </Box>
+                    </Stack>
+                  </Paper>
                 )}
-              </Alert>
+              </Stack>
             )}
           </Stack>
         </DialogContent>

@@ -92,6 +92,7 @@ class LinkedInPostJobPayload(BaseModel):
     skills: str | None = None
     location: str | None = None
     profile_url: str | None = None
+    description: str | None = None
     custom_message: str | None = None
 
 def get_active_recruiter(request: Request, db: Session) -> User | None:
@@ -125,6 +126,9 @@ def generate_linkedin_job_post(payload: LinkedInPostJobPayload, request: Request
     experience = payload.experience or (job.experience_level if job else "Not Specified")
     apply_url = f"http://127.0.0.1:5173/apply/{job.id if job else 1}"
     
+    desc = (payload.custom_message or payload.description or (job.description if job and job.description else "")).strip()
+    desc_section = f"\n📝 Job Overview:\n{desc}\n" if desc else ""
+
     tag_words = [w for w in (title + ' ' + skills).replace('/', ' ').replace('-', ' ').replace(',', ' ').split() if len(w) > 1 and w.isalnum()]
     clean_tags = list(dict.fromkeys([f"#{w}" for w in tag_words]))
     hashtag_str = " ".join(clean_tags[:6]) + " #Hiring #Jobs #Careers #TalentAcquisition"
@@ -132,12 +136,13 @@ def generate_linkedin_job_post(payload: LinkedInPostJobPayload, request: Request
     posted_by_line = f"👤 Posted by: {recruiter_name} ({profile_url})\n" if profile_url and profile_url != "https://www.linkedin.com" else f"👤 Posted by: {recruiter_name}\n"
 
     post_text = (
-        f"🚀 We are hiring! {title} Position\n\n"
+        f"🚀 We are hiring! {title}\n\n"
         f"📍 Location: {location}\n"
         f"💼 Role: {title}\n"
         f"⏳ Experience Required: {experience}\n"
         f"🛠️ Key Skills: {skills if skills else 'Relevant Technical Skills'}\n"
-        f"{posted_by_line}\n"
+        f"{posted_by_line}"
+        f"{desc_section}\n"
         f"📩 Interested candidates can apply directly via Cbtshire.ai:\n"
         f"{apply_url}\n\n"
         f"{hashtag_str}"
