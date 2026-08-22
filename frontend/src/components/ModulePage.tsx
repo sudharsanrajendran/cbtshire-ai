@@ -62,6 +62,7 @@ import { generateJobDescription, suggestSkills } from '../services/aiService';
 import { generateLinkedInJobPost } from '../services/integrationsService';
 import { InterviewPage } from './InterviewPage';
 import { CandidateProfilePanel } from './CandidateProfilePanel';
+import { CandidateReviewModal } from './CandidateReviewModal';
 
 export type ModuleKind = 'jobs' | 'candidates' | 'assessments' | 'interviews' | 'offers';
 const labels = {
@@ -2331,221 +2332,21 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
         </DialogActions>
       </Dialog>
 
-      {/* Candidate Profile & Resume Review Modal */}
-      <Dialog
+      {/* Candidate Profile & PDF-style Resume Review Modal */}
+      <CandidateReviewModal
         open={candidateDetailOpen}
         onClose={() => setCandidateDetailOpen(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3.5, p: 0.5 } }}
-      >
-        <DialogTitle sx={{ pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Box>
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Typography variant="h5" fontWeight={800} sx={{ color: '#0f172a' }}>
-                  {selectedCandidateForReview?.name || 'Candidate Details'}
-                </Typography>
-                {renderPlatformSourceBadge(selectedCandidateForReview?.source)}
-              </Stack>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.3 }}>
-                Applied for: <strong style={{ color: '#0284c7' }}>{selectedCandidateForReview?.role}</strong> · {selectedCandidateForReview?.email}
-              </Typography>
-            </Box>
-            <IconButton onClick={() => setCandidateDetailOpen(false)} size="small">
-              ✕
-            </IconButton>
-          </Stack>
-        </DialogTitle>
-
-        <DialogContent sx={{ mt: 2 }}>
-          {selectedCandidateForReview && (
-            <Stack spacing={2.5}>
-              {/* Tab Selector: AI ATS Suitability vs Full Resume Text */}
-              <Paper elevation={0} sx={{ p: 0.5, bgcolor: '#f1f5f9', borderRadius: 2, display: 'inline-flex', width: 'fit-content' }}>
-                <Button
-                  size="small"
-                  variant={activeCandidateTab === 'profile' ? 'contained' : 'text'}
-                  color={activeCandidateTab === 'profile' ? 'primary' : 'inherit'}
-                  startIcon={<AutoAwesomeRoundedIcon />}
-                  onClick={() => setActiveCandidateTab('profile')}
-                  sx={{ borderRadius: 1.5, fontWeight: 700, px: 2 }}
-                >
-                  ✨ AI ATS Match & Overview
-                </Button>
-                <Button
-                  size="small"
-                  variant={activeCandidateTab === 'resume' ? 'contained' : 'text'}
-                  color={activeCandidateTab === 'resume' ? 'primary' : 'inherit'}
-                  startIcon={<DescriptionRoundedIcon />}
-                  onClick={() => setActiveCandidateTab('resume')}
-                  sx={{ borderRadius: 1.5, fontWeight: 700, px: 2 }}
-                >
-                  📄 Full Resume Text & File
-                </Button>
-              </Paper>
-
-              {activeCandidateTab === 'profile' ? (
-                <Stack spacing={2}>
-                  {/* ATS Match Score Card */}
-                  <Card sx={{ bgcolor: (selectedCandidateForReview.match_score || 0) >= 70 ? '#f0fdf4' : '#fffbeb', border: '1px solid', borderColor: (selectedCandidateForReview.match_score || 0) >= 70 ? '#86efac' : '#fde68a' }}>
-                    <CardContent sx={{ p: 2 }}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
-                        <Box>
-                          <Typography variant="overline" sx={{ fontWeight: 800, color: (selectedCandidateForReview.match_score || 0) >= 70 ? '#15803d' : '#b45309' }}>
-                            AI ATS MATCH SCORE
-                          </Typography>
-                          <Typography variant="h4" fontWeight={900} sx={{ color: (selectedCandidateForReview.match_score || 0) >= 70 ? '#166534' : '#92400e' }}>
-                            {selectedCandidateForReview.match_score || 75}%
-                            <span style={{ fontSize: 16, fontWeight: 600, marginLeft: 8 }}>
-                              {(selectedCandidateForReview.match_score || 0) >= 70 ? '· Highly Suitable for this Role' : '· Needs Recruiter Review'}
-                            </span>
-                          </Typography>
-                        </Box>
-                        <Chip
-                          label={selectedCandidateForReview.status || 'Screening'}
-                          size="small"
-                          color={selectedCandidateForReview.status === 'Assessment Sent' ? 'success' : 'primary'}
-                          sx={{ fontWeight: 800 }}
-                        />
-                      </Stack>
-
-                      <Divider sx={{ my: 1.5 }} />
-
-                      <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#334155' }}>
-                        AI Screening Analysis & Match Explanation:
-                      </Typography>
-                      <Typography variant="body2" sx={{ mt: 0.5, color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                        {selectedCandidateForReview.match_explanation || selectedCandidateForReview.resume_info?.parsed_summary || 'Resume analyzed and queued for evaluation against required technical skills.'}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-
-                  {/* Skills & Seniority */}
-                  <Card variant="outlined">
-                    <CardContent sx={{ p: 2 }}>
-                      <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1e293b' }}>
-                        Extracted Technical Skills & Seniority:
-                      </Typography>
-                      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mt: 1, gap: 0.8 }}>
-                        {selectedCandidateForReview.experience_level && (
-                          <Chip
-                            label={`Level: ${selectedCandidateForReview.experience_level}`}
-                            size="small"
-                            sx={{ fontWeight: 700, bgcolor: '#f0fdf4', color: '#166534', borderColor: '#86efac', border: '1px solid' }}
-                          />
-                        )}
-                        {(selectedCandidateForReview.skills || []).map((sk) => (
-                          <Chip key={sk} label={sk} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
-                        ))}
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Stack>
-              ) : (
-                <Stack spacing={2}>
-                  <Card variant="outlined">
-                    <CardContent sx={{ p: 2 }}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                        <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1e293b' }}>
-                          Resume Document Text:
-                        </Typography>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<ContentCopyRoundedIcon />}
-                          onClick={() => {
-                            if (selectedCandidateForReview.resume_info?.extracted_text) {
-                              void navigator.clipboard.writeText(selectedCandidateForReview.resume_info.extracted_text);
-                              setCopiedResumeText(true);
-                              setTimeout(() => setCopiedResumeText(false), 3000);
-                            }
-                          }}
-                          sx={{ fontWeight: 700, fontSize: 11 }}
-                        >
-                          {copiedResumeText ? 'Copied!' : 'Copy Resume Text'}
-                        </Button>
-                      </Stack>
-
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 2,
-                          bgcolor: '#f8fafc',
-                          border: '1px solid',
-                          borderColor: '#e2e8f0',
-                          borderRadius: 2,
-                          maxHeight: 360,
-                          overflowY: 'auto',
-                          fontFamily: 'monospace',
-                          fontSize: 13,
-                          lineHeight: 1.6,
-                          whiteSpace: 'pre-wrap',
-                          color: '#1e293b'
-                        }}
-                      >
-                        {selectedCandidateForReview.resume_info?.extracted_text || 'No raw extracted text available for this candidate resume.'}
-                      </Paper>
-
-                      {selectedCandidateForReview.resume_info?.storage_url && (
-                        <Box sx={{ mt: 1.5 }}>
-                          <Button
-                            size="small"
-                            variant="contained"
-                            color="primary"
-                            startIcon={<LaunchRoundedIcon />}
-                            onClick={() => window.open(selectedCandidateForReview.resume_info?.storage_url, '_blank')}
-                            sx={{ fontWeight: 700 }}
-                          >
-                            Open Original Uploaded File
-                          </Button>
-                        </Box>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Stack>
-              )}
-            </Stack>
-          )}
-        </DialogContent>
-
-        <DialogActions sx={{ p: 2.5, borderTop: '1px solid', borderColor: 'divider', gap: 1 }}>
-          {selectedCandidateForReview && (
-            <>
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<EventRoundedIcon />}
-                onClick={() => {
-                  setCandidateDetailOpen(false);
-                  handleOpenScheduleInterview({
-                    id: selectedCandidateForReview.id,
-                    name: selectedCandidateForReview.name,
-                    email: selectedCandidateForReview.email,
-                    role: selectedCandidateForReview.role || 'Candidate'
-                  });
-                }}
-                sx={{ fontWeight: 700, borderRadius: 2, bgcolor: '#059669', '&:hover': { bgcolor: '#047857' } }}
-              >
-                📅 Schedule Interview
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={resendingId === selectedCandidateForReview.id ? <CircularProgress size={14} color="inherit" /> : <SendRoundedIcon />}
-                onClick={() => void handleResendAssessment(selectedCandidateForReview.id)}
-                disabled={resendingId === selectedCandidateForReview.id}
-                sx={{ fontWeight: 700, borderRadius: 2 }}
-              >
-                {selectedCandidateForReview.status === 'Assessment Sent' ? '🔁 Resend Assessment Link' : '✨ Send Assessment Link'}
-              </Button>
-            </>
-          )}
-          <Button onClick={() => setCandidateDetailOpen(false)} variant="outlined" sx={{ fontWeight: 700, borderRadius: 2 }}>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+        candidate={selectedCandidateForReview}
+        onScheduleInterview={(c) =>
+          handleOpenScheduleInterview({
+            id: c.id,
+            name: c.name,
+            email: c.email,
+            role: c.role || 'Candidate'
+          })
+        }
+        onAssessmentSent={() => void reload()}
+      />
     </Stack>
   );
 }

@@ -4,16 +4,32 @@ import { Alert, Box, Button, Card, CardContent, Chip, CircularProgress, LinearPr
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import AutoAwesomeRoundedIcon from '@mui/icons-material/AutoAwesomeRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import { getDashboard } from '../services/dashboardService';
 import type { Candidate, DashboardStats, Job } from '../types';
+import { CandidateReviewModal } from './CandidateReviewModal';
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const [error, setError] = useState('');
-  useEffect(() => { void getDashboard().then((data) => { setStats(data.stats); setJobs(data.jobs); setCandidates(data.candidates); }).catch(() => setError('Could not load dashboard data from the API.')); }, []);
+
+  const loadData = () => {
+    void getDashboard().then((data) => {
+      setStats(data.stats);
+      setJobs(data.jobs);
+      setCandidates(data.candidates);
+    }).catch(() => setError('Could not load dashboard data from the API.'));
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
   if (error) return <Alert severity="error">{error} Refresh after starting the FastAPI server.</Alert>;
   if (!stats) return <Box sx={{ minHeight: 320, display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>;
   const statCards = [['Active jobs', stats.active_jobs, '#087f8c'], ['Total candidates', stats.total_candidates, '#6875d8'], ['Interviews', stats.interviews, '#ef8354'], ['Offers', stats.offers, '#2e9d70']];
@@ -43,10 +59,10 @@ export function DashboardPage() {
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.2fr .8fr' }, gap: 2 }}>
         <Card>
           <CardContent>
-            <Stack direction="row" justifyContent="space-between">
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Box>
                 <Typography variant="h6">Recent candidates</Typography>
-                <Typography variant="body2" color="text.secondary">Latest records returned by the API</Typography>
+                <Typography variant="body2" color="text.secondary">Tap any candidate to review full resume & AI screening</Typography>
               </Box>
               <Button size="small" endIcon={<ArrowForwardRoundedIcon />} onClick={() => navigate('/candidates')}>
                 See all
@@ -57,18 +73,57 @@ export function DashboardPage() {
                 <Typography color="text.secondary">No candidates yet.</Typography>
               ) : (
                 candidates.map((candidate) => (
-                  <Stack key={candidate.id} direction="row" justifyContent="space-between" alignItems="center">
+                  <Stack
+                    key={candidate.id}
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    onClick={() => {
+                      setSelectedCandidate(candidate);
+                      setModalOpen(true);
+                    }}
+                    sx={{
+                      p: 1.2,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        bgcolor: '#f1f5f9',
+                        borderColor: '#93c5fd',
+                        transform: 'translateX(4px)'
+                      }
+                    }}
+                  >
                     <Box>
-                      <Typography fontWeight={700}>{candidate.name}</Typography>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Typography fontWeight={800}>{candidate.name}</Typography>
+                        {(candidate.match_score || 0) >= 70 && (
+                          <Chip label={`${candidate.match_score}% Match`} size="small" sx={{ fontWeight: 800, fontSize: 10, bgcolor: '#dcfce7', color: '#166534' }} />
+                        )}
+                      </Stack>
                       <Typography variant="caption" color="text.secondary">{candidate.role} · {candidate.email}</Typography>
                     </Box>
-                    <Chip label={candidate.status} size="small" />
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip label={candidate.status || 'Screening'} size="small" />
+                      <Button size="small" variant="text" startIcon={<VisibilityRoundedIcon sx={{ fontSize: 16 }} />} sx={{ fontWeight: 700, fontSize: 12, minWidth: 0 }}>
+                        View
+                      </Button>
+                    </Stack>
                   </Stack>
                 ))
               )}
             </Stack>
           </CardContent>
         </Card>
+        <CandidateReviewModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          candidate={selectedCandidate}
+          onScheduleInterview={() => navigate('/interviews')}
+          onAssessmentSent={() => loadData()}
+        />
         <Card>
           <CardContent>
             <Typography variant="h6">Open roles</Typography>
