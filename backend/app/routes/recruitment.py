@@ -305,12 +305,20 @@ async def create_candidate_with_resume(
 
     cand_id = res['id']
     if file and extracted_text:
+        import base64
+        file_b64 = ""
+        try:
+            file_b64 = base64.b64encode(content).decode('utf-8')
+        except Exception:
+            pass
+
         db.add(Resume(
             candidate_id=cand_id,
             filename=file.filename or 'resume.pdf',
             content_type=file.content_type or 'application/pdf',
             extracted_text=extracted_text,
-            parsed_summary=analysis_text or ats_result.get('explanation', '')
+            parsed_summary=analysis_text or ats_result.get('explanation', ''),
+            file_base64=file_b64
         ))
         db.commit()
 

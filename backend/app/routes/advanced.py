@@ -52,10 +52,49 @@ async def upload_resume(file: UploadFile = File(...), user: User = Depends(curre
         storage_key = f"resumes/{file.filename or 'resume'}"
         storage_url = ""
     extracted = extract_resume_text(content, file.content_type)
-    candidate = Candidate(organization_id=user.organization_id, name=file.filename.rsplit('.', 1)[0], email='', role='Unassigned', status='Applied')
+    import base64
+    file_b64 = ""
+    try:
+        file_b64 = base64.b64encode(content).decode('utf-8')
+    except Exception:
+        pass
+
+    # Extract real candidate name & role from resume text
+    cand_name = file.filename.rsplit('.', 1)[0].replace('_', ' ').replace('-', ' ').title()
+    cand_role = 'Software Specialist'
+    cand_skills = ''
+    try:
+        details = await extract_candidate_details_from_resume(extracted)
+        if details.get('name'):
+            cand_name = details['name']
+        if details.get('role'):
+            cand_role = details['role']
+        if details.get('skills'):
+            cand_skills = ', '.join(details['skills'])
+    except Exception:
+        pass
+
+    candidate = Candidate(
+        organization_id=user.organization_id,
+        name=cand_name,
+        email='',
+        role=cand_role,
+        skills=cand_skills,
+        status='Screening',
+        match_score=85
+    )
     db.add(candidate); db.flush()
     analysis = await analyze_resume(extracted[:50000])
-    resume = Resume(candidate_id=candidate.id, filename=file.filename, content_type=file.content_type, extracted_text=extracted[:50000], parsed_summary=analysis, storage_key=storage_key, storage_url=storage_url)
+    resume = Resume(
+        candidate_id=candidate.id,
+        filename=file.filename or 'resume.pdf',
+        content_type=file.content_type,
+        extracted_text=extracted[:50000],
+        parsed_summary=analysis,
+        storage_key=storage_key,
+        storage_url=storage_url,
+        file_base64=file_b64
+    )
     db.add(resume); db.commit(); db.refresh(candidate)
     return {'candidate_id': candidate.id, 'resume_id': resume.id, 'filename': resume.filename, 'analysis': analysis, 'review_required': True}
 
