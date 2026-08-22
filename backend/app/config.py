@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     ai_api_key: str = ''
     ai_model: str = ''
     ai_base_url: str = ''
-    cors_origins: str = 'http://localhost:5173'
+    cors_origins: str = '*'
     storage_endpoint_url: str = ''
     storage_access_key: str = ''
     storage_secret_key: str = ''
