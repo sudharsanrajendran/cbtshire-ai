@@ -4,8 +4,8 @@ import { forgotPassword, login, register, resetPassword, verifyOtp } from '../se
 
 type AuthMode = 'signin' | 'signup' | 'forgot' | 'verify_otp' | 'reset';
 
-export function LoginPage() {
-  const [mode, setMode] = useState<AuthMode>('signin');
+export function LoginPage({ initialMode = 'signin' }: { initialMode?: AuthMode }) {
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
