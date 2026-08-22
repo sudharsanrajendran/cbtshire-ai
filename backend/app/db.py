@@ -12,12 +12,18 @@ class Base(DeclarativeBase):
     pass
 
 def ensure_sqlite_schema() -> None:
-    if not settings.database_url.startswith('sqlite'):
-        return
     additions = {
         'jobs': {'employment_type': "VARCHAR(40) DEFAULT 'Full-time'", 'experience_level': "VARCHAR(60) DEFAULT 'Mid-level'", 'skills': "TEXT DEFAULT ''"},
-        'candidates': {'role': "VARCHAR(160) DEFAULT ''", 'experience_level': "VARCHAR(60) DEFAULT 'Mid-level'", 'skills': "TEXT DEFAULT ''", 'match_score': "INTEGER DEFAULT 0", 'source': "VARCHAR(60) DEFAULT 'Careers Portal'"},
-        'resumes': {'storage_key': "VARCHAR(500) DEFAULT ''", 'storage_url': "VARCHAR(1000) DEFAULT ''"},
+        'candidates': {'role': "VARCHAR(160) DEFAULT ''", 'experience_level': "VARCHAR(60) DEFAULT 'Mid-level'", 'skills': "TEXT DEFAULT ''", 'match_score': "INTEGER DEFAULT 85", 'source': "VARCHAR(60) DEFAULT 'Careers Portal'"},
+        'resumes': {
+            'storage_key': "VARCHAR(500) DEFAULT ''",
+            'storage_url': "VARCHAR(1000) DEFAULT ''",
+            'file_base64': "TEXT DEFAULT ''",
+            'content_type': "VARCHAR(100) DEFAULT 'application/pdf'",
+            'filename': "VARCHAR(255) DEFAULT 'resume.pdf'",
+            'extracted_text': "TEXT DEFAULT ''",
+            'parsed_summary': "TEXT DEFAULT ''"
+        },
         'users': {
             'linkedin_profile_url': "VARCHAR(255) DEFAULT ''",
             'naukri_recruiter_id': "VARCHAR(255) DEFAULT ''",
@@ -25,19 +31,25 @@ def ensure_sqlite_schema() -> None:
             'careers_page_url': "VARCHAR(255) DEFAULT ''"
         },
     }
-    inspector = inspect(engine)
-    with engine.begin() as connection:
-        for table, columns in additions.items():
-            if not inspector.has_table(table):
-                continue
-            existing = {column['name'] for column in inspector.get_columns(table)}
-            for name, definition in columns.items():
-                if name not in existing:
-                    connection.execute(text(f'ALTER TABLE {table} ADD COLUMN {name} {definition}'))
-        try:
-            connection.execute(text("UPDATE candidates SET match_score = 85 WHERE match_score IS NULL OR match_score = 0"))
-        except Exception:
-            pass
+    try:
+        inspector = inspect(engine)
+        with engine.begin() as connection:
+            for table, columns in additions.items():
+                if not inspector.has_table(table):
+                    continue
+                existing = {column['name'] for column in inspector.get_columns(table)}
+                for name, definition in columns.items():
+                    if name not in existing:
+                        try:
+                            connection.execute(text(f'ALTER TABLE {table} ADD COLUMN {name} {definition}'))
+                        except Exception:
+                            pass
+            try:
+                connection.execute(text("UPDATE candidates SET match_score = 85 WHERE match_score IS NULL OR match_score = 0"))
+            except Exception:
+                pass
+    except Exception as e:
+        print("Schema ensure warning:", e)
 
 def seed_initial_data() -> None:
     from .models import Organization, User, Job

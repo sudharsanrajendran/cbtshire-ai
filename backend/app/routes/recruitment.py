@@ -93,7 +93,60 @@ def update_job_status(job_id: int, status: str, user: User = Depends(current_use
 
 @router.delete('/jobs/{job_id}')
 def delete_job(job_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    job = get_org(db, Job, job_id, user.organization_id); db.delete(job); db.commit()
+    job = get_org(db, Job, job_id, user.organization_id)
+
+    # 1. Find all applications for this job
+    applications = db.scalars(select(Application).where(Application.job_id == job.id)).all()
+    candidate_ids = {app.candidate_id for app in applications if app.candidate_id}
+
+    # Also find candidates whose role matches this job title
+    role_candidates = db.scalars(select(Candidate).where(Candidate.organization_id == user.organization_id, Candidate.role == job.title)).all()
+    for rc in role_candidates:
+        candidate_ids.add(rc.id)
+
+    # 2. Cascade delete all candidates & resumes related to this job
+    for cid in candidate_ids:
+        # Delete resumes
+        resumes = db.scalars(select(Resume).where(Resume.candidate_id == cid)).all()
+        for r in resumes:
+            db.delete(r)
+
+        # Delete interviews
+        interviews = db.scalars(select(Interview).where(Interview.candidate_id == cid)).all()
+        for inv in interviews:
+            db.delete(inv)
+
+        # Delete offers
+        offers = db.scalars(select(Offer).where(Offer.candidate_id == cid)).all()
+        for off in offers:
+            db.delete(off)
+
+        # Delete assessment attempts
+        attempts = db.scalars(select(AssessmentAttempt).where(AssessmentAttempt.candidate_id == cid)).all()
+        for att in attempts:
+            db.delete(att)
+
+        # Delete applications
+        c_apps = db.scalars(select(Application).where(Application.candidate_id == cid)).all()
+        for ca in c_apps:
+            db.delete(ca)
+
+        # Delete candidate
+        cand = db.get(Candidate, cid)
+        if cand:
+            db.delete(cand)
+
+    # 3. Cascade delete assessments & questions for this job
+    assessments = db.scalars(select(Assessment).where(Assessment.job_id == job.id)).all()
+    for asm in assessments:
+        questions = db.scalars(select(Question).where(Question.assessment_id == asm.id)).all()
+        for q in questions:
+            db.delete(q)
+        db.delete(asm)
+
+    # 4. Delete the job itself
+    db.delete(job)
+    db.commit()
     return {'deleted': True}
 
 @router.get('/candidates')
