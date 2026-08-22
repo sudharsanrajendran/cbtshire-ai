@@ -705,6 +705,17 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
   // Confirm Distribution & Publish to selected platforms
   const handleDistributeJob = async () => {
     if (!targetJob) return;
+
+    // Pre-open tab synchronously on user click to 100% bypass browser popup blockers!
+    let newTab: Window | null = null;
+    if (linkedinEnabled) {
+      try {
+        newTab = window.open('about:blank', '_blank');
+      } catch {
+        newTab = null;
+      }
+    }
+
     setDistributing(true);
     setDistributionSuccess(null);
     setGeneratedLinkedInPost(null);
@@ -731,14 +742,20 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
           // ignore
         }
 
-        // Try direct browser open
-        try {
-          window.open(targetUrl, '_blank');
-        } catch {
-          // ignore
+        // Direct navigate the pre-opened tab to LinkedIn without any blocking!
+        if (newTab && !newTab.closed) {
+          newTab.location.href = targetUrl;
+        } else {
+          try {
+            window.open(targetUrl, '_blank');
+          } catch {
+            // fallback
+          }
         }
 
-        successMsg += `LinkedIn post copy generated & ready! `;
+        successMsg += `LinkedIn post copy generated & opened! `;
+      } else if (newTab && !newTab.closed) {
+        newTab.close();
       }
 
       if (naukriEnabled) {
@@ -754,6 +771,7 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
       setDistributionSuccess(successMsg);
       await reload();
     } catch (err: any) {
+      if (newTab && !newTab.closed) newTab.close();
       console.error(err);
       setDistributionSuccess(`Job status updated, but share encountered an issue: ${err?.response?.data?.detail || err?.message}`);
     } finally {
