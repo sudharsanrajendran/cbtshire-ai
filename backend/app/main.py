@@ -24,13 +24,10 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*']
 )
-app.include_router(auth_router, prefix='/api')
-app.include_router(dashboard_router, prefix='/api')
-app.include_router(recruitment_router, prefix='/api')
-app.include_router(ai_router, prefix='/api')
-app.include_router(advanced_router, prefix='/api')
-app.include_router(public_router, prefix='/api')
-app.include_router(integrations_router, prefix='/api')
+routers = [auth_router, dashboard_router, recruitment_router, ai_router, advanced_router, public_router, integrations_router]
+for r in routers:
+    app.include_router(r, prefix='/api')
+    app.include_router(r)
 
 @app.get('/')
 def root(): return {'status': 'ok', 'service': 'cbtshire-api', 'message': 'Cbtshire.ai API is running', 'docs': '/docs'}
