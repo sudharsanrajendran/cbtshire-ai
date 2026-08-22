@@ -32,5 +32,8 @@ app.include_router(advanced_router, prefix='/api')
 app.include_router(public_router, prefix='/api')
 app.include_router(integrations_router, prefix='/api')
 
+@app.get('/')
+def root(): return {'status': 'ok', 'service': 'cbtshire-api', 'message': 'Cbtshire.ai API is running', 'docs': '/docs'}
+
 @app.get('/health')
 def health(): return {'status': 'ok', 'service': 'cbtshire-api'}
