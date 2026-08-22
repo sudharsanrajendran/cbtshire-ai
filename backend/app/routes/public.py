@@ -1,6 +1,8 @@
+import base64
 from datetime import datetime
 from secrets import token_urlsafe
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, Response
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from ..config import get_settings
@@ -13,6 +15,34 @@ from .advanced import extract_resume_text
 
 router = APIRouter(prefix='/public', tags=['public'])
 ALLOWED = {'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+
+@router.get('/candidates/{candidate_id}/resume-file')
+def get_candidate_resume_file(candidate_id: int):
+    with SessionLocal() as db:
+        resume = db.scalar(select(Resume).where(Resume.candidate_id == candidate_id).order_by(Resume.id.desc()))
+        if not resume:
+            raise HTTPException(404, 'Resume file not found')
+        
+        if getattr(resume, 'file_base64', None):
+            try:
+                file_bytes = base64.b64decode(resume.file_base64)
+                return Response(
+                    content=file_bytes,
+                    media_type=resume.content_type or 'application/pdf',
+                    headers={
+                        'Content-Disposition': f'inline; filename="{resume.filename}"'
+                    }
+                )
+            except Exception:
+                pass
+                
+        if resume.storage_url:
+            return RedirectResponse(url=resume.storage_url)
+
+        if resume.extracted_text:
+            return Response(content=resume.extracted_text, media_type="text/plain; charset=utf-8")
+
+        raise HTTPException(404, 'Resume content not available')
 
 @router.get('/jobs/{job_id}')
 def public_job(job_id: int):
@@ -67,13 +97,22 @@ async def apply(job_id: int, name: str = Form(...), email: str = Form(...), phon
         db.flush()
 
         storage_key, storage_url = "", ""
+        file_b64 = ""
         try:
-            storage_key, storage_url = CloudStorage().upload(content, file.filename or 'resume', file.content_type)
-        except Exception as storage_err:
-            storage_key = f"resumes/{file.filename or 'resume'}"
-            storage_url = ""
+            file_b64 = base64.b64encode(content).decode('utf-8')
+        except Exception:
+            pass
 
-        db.add(Resume(candidate_id=candidate.id, filename=file.filename or 'resume', content_type=file.content_type, extracted_text=extracted, parsed_summary=analysis, storage_key=storage_key, storage_url=storage_url))
+        db.add(Resume(
+            candidate_id=candidate.id,
+            filename=file.filename or 'resume.pdf',
+            content_type=file.content_type or 'application/pdf',
+            extracted_text=extracted,
+            parsed_summary=analysis,
+            storage_key=storage_key,
+            storage_url=storage_url,
+            file_base64=file_b64
+        ))
         
         assessment = db.scalar(select(Assessment).where(Assessment.organization_id == job.organization_id).order_by(Assessment.id.desc()))
         if not assessment:

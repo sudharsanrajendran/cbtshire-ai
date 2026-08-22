@@ -109,6 +109,7 @@ class Resume(Base):
     parsed_summary: Mapped[str] = mapped_column(Text, default='')
     storage_key: Mapped[str] = mapped_column(String(500), default='')
     storage_url: Mapped[str] = mapped_column(String(1000), default='')
+    file_base64: Mapped[str] = mapped_column(Text, default='', nullable=True)
 
 class Question(Base):
     __tablename__ = 'questions'

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -21,6 +22,7 @@ import DescriptionRoundedIcon from '@mui/icons-material/DescriptionRounded';
 import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import PrintRoundedIcon from '@mui/icons-material/PrintRounded';
 import LaunchRoundedIcon from '@mui/icons-material/LaunchRounded';
+import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import EventRoundedIcon from '@mui/icons-material/EventRounded';
 import type { Candidate } from '../types';
@@ -41,7 +43,7 @@ export function CandidateReviewModal({
   onScheduleInterview,
   onAssessmentSent
 }: CandidateReviewModalProps) {
-  const [activeTab, setActiveTab] = useState<'pdf' | 'overview' | 'raw'>('pdf');
+  const [activeTab, setActiveTab] = useState<'document' | 'ai_insights' | 'raw_text'>('document');
   const [sendingAssessment, setSendingAssessment] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
   const [sendSuccessMsg, setSendSuccessMsg] = useState<string | null>(null);
@@ -50,82 +52,55 @@ export function CandidateReviewModal({
 
   const matchScore = candidate.match_score || 75;
   const isShortlisted = matchScore >= 70;
+  const resumeFilename = candidate.resume_info?.filename || `${candidate.name.replace(/\s+/g, '_')}_Resume.pdf`;
   const resumeText = candidate.resume_info?.extracted_text || '';
+  const fileUrl = (candidate.resume_info as any)?.file_url || candidate.resume_info?.storage_url || `https://cbtshire-ai.onrender.com/api/public/candidates/${candidate.id}/resume-file`;
 
   const handleSendAssessment = async () => {
     setSendingAssessment(true);
     setSendSuccessMsg(null);
     try {
       await resendAssessmentLink(candidate.id);
-      setSendSuccessMsg(`Assessment invitation successfully emailed to ${candidate.email}!`);
+      setSendSuccessMsg(`Assessment invitation email dispatched directly to ${candidate.email}!`);
       if (onAssessmentSent) onAssessmentSent();
     } catch (err: any) {
       console.error(err);
-      setSendSuccessMsg('Could not send assessment invitation.');
+      setSendSuccessMsg('Could not dispatch assessment link.');
     } finally {
       setSendingAssessment(false);
     }
   };
 
-  const handlePrintPdf = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>${candidate.name} - Resume</title>
-          <style>
-            body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #1e293b; max-width: 800px; margin: 0 auto; line-height: 1.6; }
-            h1 { color: #0f172a; margin-bottom: 4px; font-size: 26px; }
-            .header-info { color: #64748b; font-size: 14px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; }
-            .section-title { font-size: 16px; font-weight: bold; color: #0284c7; border-bottom: 1px solid #cbd5e1; margin-top: 24px; padding-bottom: 4px; text-transform: uppercase; }
-            .skill-pill { display: inline-block; background: #f1f5f9; padding: 4px 10px; border-radius: 12px; font-size: 12px; margin: 4px 4px 4px 0; border: 1px solid #cbd5e1; }
-            .resume-body { white-space: pre-wrap; font-size: 13px; color: #334155; margin-top: 12px; }
-          </style>
-        </head>
-        <body>
-          <h1>${candidate.name}</h1>
-          <div class="header-info">
-            <strong>Role Applied:</strong> ${candidate.role} &nbsp;|&nbsp; 
-            <strong>Email:</strong> ${candidate.email} &nbsp;|&nbsp;
-            <strong>ATS Match Score:</strong> ${matchScore}%
-          </div>
-          <div class="section-title">Professional Summary & Skills</div>
-          <p><strong>Experience Level:</strong> ${candidate.experience_level || 'Mid-level'}</p>
-          <div style="margin-top: 8px;">
-            ${(candidate.skills || []).map(s => `<span class="skill-pill">${s}</span>`).join('')}
-          </div>
-          <div class="section-title">Resume Content</div>
-          <div class="resume-body">${resumeText || 'No raw text available.'}</div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => { printWindow.print(); }, 500);
+  const handlePrint = () => {
+    if (fileUrl) {
+      const printWin = window.open(fileUrl, '_blank');
+      printWin?.focus();
+    } else {
+      window.print();
+    }
   };
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
+      maxWidth="lg"
       fullWidth
       PaperProps={{
         sx: {
           borderRadius: 3.5,
           p: 0.5,
-          maxHeight: '92vh',
+          maxHeight: '94vh',
           display: 'flex',
           flexDirection: 'column'
         }
       }}
     >
-      <DialogTitle sx={{ pb: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+      <DialogTitle sx={{ pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Box>
             <Stack direction="row" alignItems="center" spacing={1.2} flexWrap="wrap">
-              <Typography variant="h5" fontWeight={800} sx={{ color: '#0f172a' }}>
+              <Typography variant="h5" fontWeight={900} sx={{ color: '#0f172a' }}>
                 {candidate.name}
               </Typography>
               <Chip
@@ -158,197 +133,148 @@ export function CandidateReviewModal({
       <DialogContent sx={{ mt: 2, flex: 1, overflowY: 'auto' }}>
         <Stack spacing={2.5}>
           {sendSuccessMsg && (
-            <Paper elevation={0} sx={{ p: 1.5, bgcolor: '#f0fdf4', border: '1px solid #86efac', borderRadius: 2 }}>
-              <Typography variant="body2" sx={{ color: '#166534', fontWeight: 700 }}>
-                {sendSuccessMsg}
-              </Typography>
-            </Paper>
+            <Alert severity="success" sx={{ borderRadius: 2 }}>
+              {sendSuccessMsg}
+            </Alert>
           )}
 
-          {/* Top Format Selector Bar */}
+          {/* Navigation Tabs & Actions Toolbar */}
           <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} gap={1.5} flexWrap="wrap">
             <Paper elevation={0} sx={{ p: 0.5, bgcolor: '#f1f5f9', borderRadius: 2, display: 'inline-flex' }}>
               <Button
                 size="small"
-                variant={activeTab === 'pdf' ? 'contained' : 'text'}
-                color={activeTab === 'pdf' ? 'primary' : 'inherit'}
+                variant={activeTab === 'document' ? 'contained' : 'text'}
+                color={activeTab === 'document' ? 'primary' : 'inherit'}
                 startIcon={<DescriptionRoundedIcon />}
-                onClick={() => setActiveTab('pdf')}
-                sx={{ borderRadius: 1.5, fontWeight: 800, px: 1.8 }}
+                onClick={() => setActiveTab('document')}
+                sx={{ borderRadius: 1.5, fontWeight: 800, px: 2 }}
               >
-                📄 PDF Formatted Sheet
+                📄 Candidate Uploaded Resume (Original PDF)
               </Button>
               <Button
                 size="small"
-                variant={activeTab === 'overview' ? 'contained' : 'text'}
-                color={activeTab === 'overview' ? 'primary' : 'inherit'}
+                variant={activeTab === 'ai_insights' ? 'contained' : 'text'}
+                color={activeTab === 'ai_insights' ? 'primary' : 'inherit'}
                 startIcon={<AutoAwesomeRoundedIcon />}
-                onClick={() => setActiveTab('overview')}
-                sx={{ borderRadius: 1.5, fontWeight: 700, px: 1.8 }}
+                onClick={() => setActiveTab('ai_insights')}
+                sx={{ borderRadius: 1.5, fontWeight: 700, px: 2 }}
               >
-                ✨ AI Insights & Match
+                ✨ AI Screening Analysis
               </Button>
               <Button
                 size="small"
-                variant={activeTab === 'raw' ? 'contained' : 'text'}
-                color={activeTab === 'raw' ? 'primary' : 'inherit'}
-                onClick={() => setActiveTab('raw')}
+                variant={activeTab === 'raw_text' ? 'contained' : 'text'}
+                color={activeTab === 'raw_text' ? 'primary' : 'inherit'}
+                onClick={() => setActiveTab('raw_text')}
                 sx={{ borderRadius: 1.5, fontWeight: 700, px: 1.5 }}
               >
-                📝 Raw Text
+                📝 Text View
               </Button>
             </Paper>
 
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<LaunchRoundedIcon />}
+                onClick={() => window.open(fileUrl, '_blank')}
+                sx={{ fontWeight: 700, borderRadius: 2 }}
+              >
+                Open Original File
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<DownloadRoundedIcon />}
+                onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = fileUrl;
+                  a.download = resumeFilename;
+                  a.target = '_blank';
+                  a.click();
+                }}
+                sx={{ fontWeight: 700, borderRadius: 2 }}
+              >
+                Download PDF
+              </Button>
               <Button
                 size="small"
                 variant="outlined"
                 startIcon={<PrintRoundedIcon />}
-                onClick={handlePrintPdf}
+                onClick={handlePrint}
                 sx={{ fontWeight: 700, borderRadius: 2 }}
               >
-                Print / Save PDF
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<ContentCopyRoundedIcon />}
-                onClick={() => {
-                  if (resumeText) {
-                    void navigator.clipboard.writeText(resumeText);
-                    setCopiedText(true);
-                    setTimeout(() => setCopiedText(false), 3000);
-                  }
-                }}
-                sx={{ fontWeight: 700, borderRadius: 2 }}
-              >
-                {copiedText ? 'Copied!' : 'Copy Text'}
+                Print
               </Button>
             </Stack>
           </Stack>
 
-          {/* TAB 1: PDF Formatted Visual Resume Sheet */}
-          {activeTab === 'pdf' && (
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Paper
-                elevation={3}
+          {/* TAB 1: Real Uploaded PDF / Document Viewer */}
+          {activeTab === 'document' && (
+            <Box>
+              <Paper elevation={0} sx={{ p: 1.5, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2, mb: 1.5 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
+                  <Typography variant="body2" fontWeight={700} sx={{ color: '#334155' }}>
+                    📎 File: <strong>{resumeFilename}</strong>
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#64748b' }}>
+                    Viewing candidate's exact submitted document
+                  </Typography>
+                </Stack>
+              </Paper>
+
+              {/* Embedded Document / PDF Viewer Frame */}
+              <Box
                 sx={{
                   width: '100%',
-                  maxWidth: '780px',
-                  minHeight: '560px',
-                  p: { xs: 2.5, sm: 4 },
+                  height: { xs: '500px', md: '650px' },
                   bgcolor: '#ffffff',
                   border: '1px solid #cbd5e1',
                   borderRadius: 2.5,
-                  boxShadow: '0 10px 25px -5px rgba(0,0,0,0.06), 0 8px 10px -6px rgba(0,0,0,0.04)',
-                  fontFamily: '"Segoe UI", Roboto, Helvetica, sans-serif'
+                  overflow: 'hidden',
+                  position: 'relative'
                 }}
               >
-                {/* Visual Resume Header */}
-                <Box sx={{ borderBottom: '2.5px solid #0284c7', pb: 2.5, mb: 3 }}>
-                  <Typography variant="h4" fontWeight={900} sx={{ color: '#0f172a', letterSpacing: '-0.5px' }}>
-                    {candidate.name}
-                  </Typography>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#0284c7', mt: 0.2 }}>
-                    {candidate.role}
-                  </Typography>
-                  <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ mt: 1.2, color: '#64748b', fontSize: 13 }}>
-                    <Box>📧 <strong>Email:</strong> {candidate.email}</Box>
-                    <Box>📍 <strong>Location:</strong> {candidate.location || 'India'}</Box>
-                    <Box>💼 <strong>Seniority:</strong> {candidate.experience_level || 'Mid-level'}</Box>
-                    <Box>🌐 <strong>Source:</strong> {candidate.source || 'Careers Portal'}</Box>
-                  </Stack>
-                </Box>
+                <iframe
+                  src={`${fileUrl}#toolbar=1&navpanes=0`}
+                  title="Candidate Uploaded Resume"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 'none', display: 'block' }}
+                />
+              </Box>
 
-                {/* Candidate ATS Score Bar inside PDF */}
-                <Paper elevation={0} sx={{ p: 1.8, mb: 3, bgcolor: isShortlisted ? '#f0fdf4' : '#f8fafc', border: '1px solid', borderColor: isShortlisted ? '#86efac' : '#e2e8f0', borderRadius: 2 }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 800, color: isShortlisted ? '#15803d' : '#64748b', textTransform: 'uppercase' }}>
-                        AI Screening Verification
-                      </Typography>
-                      <Typography variant="body2" fontWeight={700} sx={{ color: isShortlisted ? '#166534' : '#334155' }}>
-                        Candidate ATS Match Score: <strong>{matchScore}%</strong> ({isShortlisted ? 'Highly Recommended for Interview' : 'Pending HR Evaluation'})
-                      </Typography>
-                    </Box>
-                    <Chip
-                      label={isShortlisted ? '✨ AI Shortlisted' : 'Under Review'}
-                      size="small"
-                      sx={{ fontWeight: 800, bgcolor: isShortlisted ? '#166534' : '#e2e8f0', color: isShortlisted ? '#ffffff' : '#334155' }}
-                    />
-                  </Stack>
-                </Paper>
-
-                {/* Technical Skills & Competencies */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0284c7', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid #e2e8f0', pb: 0.5 }}>
-                    Core Technical Skills & Expertise
+              {/* Text fallback below iframe if candidate wants to quick copy */}
+              {resumeText && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                    QUICK EXTRACTED RESUME TEXT:
                   </Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1.5, gap: 0.8 }}>
-                    {(candidate.skills || []).map((sk) => (
-                      <Chip
-                        key={sk}
-                        label={sk}
-                        size="small"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: 12,
-                          bgcolor: '#f1f5f9',
-                          color: '#0f172a',
-                          border: '1px solid #cbd5e1'
-                        }}
-                      />
-                    ))}
-                  </Stack>
-                </Box>
-
-                {/* Resume Overview & Extracted Body */}
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#0284c7', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid #e2e8f0', pb: 0.5 }}>
-                    Resume Experience & Project Details
-                  </Typography>
-                  <Box
+                  <Paper
+                    elevation={0}
                     sx={{
-                      mt: 1.5,
                       p: 2,
+                      mt: 0.5,
                       bgcolor: '#f8fafc',
                       border: '1px solid #e2e8f0',
                       borderRadius: 2,
-                      maxHeight: 320,
+                      maxHeight: 180,
                       overflowY: 'auto',
-                      lineHeight: 1.7,
-                      fontSize: 13,
-                      color: '#334155',
-                      whiteSpace: 'pre-wrap'
+                      fontSize: 12,
+                      lineHeight: 1.6,
+                      whiteSpace: 'pre-wrap',
+                      color: '#475569'
                     }}
                   >
-                    {resumeText || (
-                      <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                        Resume text was analyzed directly during screening. AI summary: {candidate.match_explanation || candidate.resume_info?.parsed_summary || 'Profile meets technical baseline.'}
-                      </Typography>
-                    )}
-                  </Box>
+                    {resumeText}
+                  </Paper>
                 </Box>
-
-                {/* Cloud storage original file link */}
-                {candidate.resume_info?.storage_url && (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="primary"
-                    startIcon={<LaunchRoundedIcon />}
-                    onClick={() => window.open(candidate.resume_info?.storage_url, '_blank')}
-                    sx={{ mt: 1, fontWeight: 700 }}
-                  >
-                    Download Original PDF File
-                  </Button>
-                )}
-              </Paper>
+              )}
             </Box>
           )}
 
-          {/* TAB 2: AI Insights & Match */}
-          {activeTab === 'overview' && (
+          {/* TAB 2: AI Insights & Screening Match */}
+          {activeTab === 'ai_insights' && (
             <Stack spacing={2}>
               <Card sx={{ bgcolor: isShortlisted ? '#f0fdf4' : '#fffbeb', border: '1px solid', borderColor: isShortlisted ? '#86efac' : '#fde68a' }}>
                 <CardContent sx={{ p: 2.5 }}>
@@ -356,40 +282,82 @@ export function CandidateReviewModal({
                     AI ATS SCREENING ANALYSIS
                   </Typography>
                   <Typography variant="h4" fontWeight={900} sx={{ color: isShortlisted ? '#166534' : '#92400e' }}>
-                    {matchScore}% Match
+                    {matchScore}% Match {isShortlisted ? '· Highly Suitable' : '· Needs Review'}
                   </Typography>
                   <Divider sx={{ my: 1.5 }} />
                   <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#334155' }}>
-                    Recommendation & Suitability Summary:
+                    Match Evaluation & Screening Insights:
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 0.8, color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                    {candidate.match_explanation || candidate.resume_info?.parsed_summary || 'Candidate resume verified against required job specifications.'}
+                    {candidate.match_explanation || candidate.resume_info?.parsed_summary || 'Resume analyzed and evaluated against job requirements.'}
                   </Typography>
+                </CardContent>
+              </Card>
+
+              <Card variant="outlined">
+                <CardContent sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1e293b' }}>
+                    Extracted Technical Skills & Seniority:
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ mt: 1, gap: 0.8 }}>
+                    {candidate.experience_level && (
+                      <Chip
+                        label={`Seniority: ${candidate.experience_level}`}
+                        size="small"
+                        sx={{ fontWeight: 700, bgcolor: '#f0fdf4', color: '#166534', borderColor: '#86efac', border: '1px solid' }}
+                      />
+                    )}
+                    {(candidate.skills || []).map((sk) => (
+                      <Chip key={sk} label={sk} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                    ))}
+                  </Stack>
                 </CardContent>
               </Card>
             </Stack>
           )}
 
-          {/* TAB 3: Raw Text */}
-          {activeTab === 'raw' && (
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                bgcolor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: 2,
-                maxHeight: 450,
-                overflowY: 'auto',
-                fontFamily: 'monospace',
-                fontSize: 13,
-                lineHeight: 1.6,
-                whiteSpace: 'pre-wrap',
-                color: '#1e293b'
-              }}
-            >
-              {resumeText || 'No raw extracted text available for this candidate resume.'}
-            </Paper>
+          {/* TAB 3: Raw Text View */}
+          {activeTab === 'raw_text' && (
+            <Box>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1e293b' }}>
+                  Extracted Resume Text:
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<ContentCopyRoundedIcon />}
+                  onClick={() => {
+                    if (resumeText) {
+                      void navigator.clipboard.writeText(resumeText);
+                      setCopiedText(true);
+                      setTimeout(() => setCopiedText(false), 3000);
+                    }
+                  }}
+                  sx={{ fontWeight: 700, fontSize: 11 }}
+                >
+                  {copiedText ? 'Copied!' : 'Copy Resume Text'}
+                </Button>
+              </Stack>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  bgcolor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 2.5,
+                  maxHeight: 500,
+                  overflowY: 'auto',
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                  lineHeight: 1.7,
+                  whiteSpace: 'pre-wrap',
+                  color: '#1e293b'
+                }}
+              >
+                {resumeText || 'No raw extracted text available for this candidate resume.'}
+              </Paper>
+            </Box>
           )}
         </Stack>
       </DialogContent>
