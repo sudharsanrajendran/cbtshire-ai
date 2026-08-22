@@ -206,7 +206,7 @@ def get_smart_skills_for_role(title: str, dept: str) -> list[str]:
     ]
 
 @router.post('/suggest-skills')
-async def suggest_skills(payload: SuggestSkillsInput, _: User = Depends(current_user)):
+async def suggest_skills(payload: SuggestSkillsInput):
     clean_title = payload.title.strip() if payload.title else "Professional"
     clean_dept = payload.department.strip() if payload.department else ""
     clean_exp = payload.experience.strip() if payload.experience else "Mid-level"
@@ -248,7 +248,7 @@ async def suggest_skills(payload: SuggestSkillsInput, _: User = Depends(current_
     }
 
 @router.post('/job-description')
-async def job_description(payload: JobDescriptionInput, _: User = Depends(current_user)):
+async def job_description(payload: JobDescriptionInput):
     clean_title = payload.title.strip() if payload.title else "Specialist"
     clean_dept = payload.department.strip() if payload.department else "Operations"
     clean_exp = payload.experience.strip() if payload.experience else "Mid-level"
