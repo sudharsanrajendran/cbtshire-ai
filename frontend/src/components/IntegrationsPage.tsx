@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Box,
@@ -28,6 +28,7 @@ import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded';
 import LaunchRoundedIcon from '@mui/icons-material/LaunchRounded';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
 
 import {
   simulateCandidateIngestion,
@@ -38,8 +39,11 @@ import {
   type LinkedInPostResponse,
   type PlatformPostResponse
 } from '../services/integrationsService';
+import { getMe } from '../services/authService';
+import type { User } from '../types';
 
 export function IntegrationsPage() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null);
   const [latestResult, setLatestResult] = useState<SimulationResult | null>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
@@ -54,6 +58,15 @@ export function IntegrationsPage() {
   const [linkedinProfile, setLinkedinProfile] = useState('');
   const [linkedinPostData, setLinkedinPostData] = useState<LinkedInPostResponse | null>(null);
   const [postingLinkedIn, setPostingLinkedIn] = useState(false);
+
+  useEffect(() => {
+    getMe().then((u) => {
+      setCurrentUser(u);
+      if (u.linkedin_profile_url) {
+        setLinkedinProfile(u.linkedin_profile_url);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Naukri State
   const [naukriPostData, setNaukriPostData] = useState<PlatformPostResponse | null>(null);
@@ -240,9 +253,44 @@ export function IntegrationsPage() {
         </Alert>
       )}
 
-      <Alert severity="info" icon={<AutoAwesomeRoundedIcon />}>
-        <b>AI Screening & Auto-Scheduler:</b> Applications received from connected platforms are automatically parsed & scored by AI. Applicants scoring ≥70% automatically receive an auto-scheduled interview link!
-      </Alert>
+      {currentUser && (
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 1.8,
+            borderRadius: 2,
+            bgcolor: '#f8fafc',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 1.5
+          }}
+        >
+          <Stack direction="row" alignItems="center" gap={1.2} flexWrap="wrap">
+            <PersonOutlineRoundedIcon color="primary" fontSize="small" />
+            <Typography variant="body2" fontWeight={600}>
+              Active Recruiter: <b>{currentUser.name}</b> ({currentUser.organization})
+            </Typography>
+            {currentUser.linkedin_profile_url && (
+              <Chip label="LinkedIn Linked" size="small" color="primary" variant="outlined" />
+            )}
+            {currentUser.naukri_recruiter_id && (
+              <Chip label={`Naukri: ${currentUser.naukri_recruiter_id}`} size="small" color="info" variant="outlined" />
+            )}
+            {currentUser.indeed_employer_id && (
+              <Chip label={`Indeed: ${currentUser.indeed_employer_id}`} size="small" color="secondary" variant="outlined" />
+            )}
+          </Stack>
+          <Button
+            size="small"
+            href="/settings"
+            sx={{ textTransform: 'none', fontWeight: 700 }}
+          >
+            Manage Accounts in Settings →
+          </Button>
+        </Paper>
+      )}
 
       {/* Target Position Form Card (CLEAN INPUT BOXES) */}
       <Card sx={{ border: '2px solid #087f8c', bgcolor: '#f0fdfa', borderRadius: 3 }}>

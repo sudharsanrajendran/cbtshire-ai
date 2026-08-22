@@ -19,6 +19,10 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(30), default='recruiter')
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    linkedin_profile_url: Mapped[Optional[str]] = mapped_column(String(255), default='')
+    naukri_recruiter_id: Mapped[Optional[str]] = mapped_column(String(255), default='')
+    indeed_employer_id: Mapped[Optional[str]] = mapped_column(String(255), default='')
+    careers_page_url: Mapped[Optional[str]] = mapped_column(String(255), default='')
 
 class Job(Base):
     __tablename__ = 'jobs'

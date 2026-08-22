@@ -94,31 +94,50 @@ class LinkedInPostJobPayload(BaseModel):
     profile_url: str | None = None
     custom_message: str | None = None
 
+def get_active_recruiter(request: Request, db: Session) -> User | None:
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        try:
+            from ..utils.security import decode_subject
+            user_id = decode_subject(token)
+            if user_id:
+                return db.get(User, int(user_id))
+        except Exception:
+            pass
+    return db.scalar(select(User).order_by(User.id))
+
 @router.post('/integrations/linkedin/post-job')
-def generate_linkedin_job_post(payload: LinkedInPostJobPayload, db: Session = Depends(get_db)):
+def generate_linkedin_job_post(payload: LinkedInPostJobPayload, request: Request, db: Session = Depends(get_db)):
     job = None
     if payload.job_id:
         job = db.get(Job, payload.job_id)
     if not job and not payload.position_name:
         job = db.scalar(select(Job).order_by(Job.id.desc()))
 
+    recruiter = get_active_recruiter(request, db)
+    recruiter_name = recruiter.name if recruiter else "Hiring Team"
+    profile_url = (recruiter.linkedin_profile_url if recruiter and recruiter.linkedin_profile_url else "") or payload.profile_url or "https://www.linkedin.com"
+
     title = payload.position_name or (job.title if job else "Job Position")
     location = payload.location or (job.location if job else "Location Not Specified")
     skills = payload.skills or (job.skills if job else "")
     experience = payload.experience or (job.experience_level if job else "Not Specified")
     apply_url = f"http://127.0.0.1:5173/apply/{job.id if job else 1}"
-    profile_url = payload.profile_url or "https://www.linkedin.com"
     
     tag_words = [w for w in (title + ' ' + skills).replace('/', ' ').replace('-', ' ').replace(',', ' ').split() if len(w) > 1 and w.isalnum()]
     clean_tags = list(dict.fromkeys([f"#{w}" for w in tag_words]))
     hashtag_str = " ".join(clean_tags[:6]) + " #Hiring #Jobs #Careers #TalentAcquisition"
+
+    posted_by_line = f"👤 Posted by: {recruiter_name} ({profile_url})\n" if profile_url and profile_url != "https://www.linkedin.com" else f"👤 Posted by: {recruiter_name}\n"
 
     post_text = (
         f"🚀 We are hiring! {title} Position\n\n"
         f"📍 Location: {location}\n"
         f"💼 Role: {title}\n"
         f"⏳ Experience Required: {experience}\n"
-        f"🛠️ Key Skills: {skills if skills else 'Relevant Technical Skills'}\n\n"
+        f"🛠️ Key Skills: {skills if skills else 'Relevant Technical Skills'}\n"
+        f"{posted_by_line}\n"
         f"📩 Interested candidates can apply directly via Cbtshire.ai:\n"
         f"{apply_url}\n\n"
         f"{hashtag_str}"
@@ -132,6 +151,7 @@ def generate_linkedin_job_post(payload: LinkedInPostJobPayload, db: Session = De
     return {
         "status": "success",
         "profile_url": profile_url,
+        "recruiter_name": recruiter_name,
         "job": {
             "id": job.id if job else 1,
             "title": title,
@@ -155,12 +175,16 @@ class PlatformPostJobPayload(BaseModel):
     custom_message: str | None = None
 
 @router.post('/integrations/naukri/post-job')
-def generate_naukri_job_post(payload: PlatformPostJobPayload, db: Session = Depends(get_db)):
+def generate_naukri_job_post(payload: PlatformPostJobPayload, request: Request, db: Session = Depends(get_db)):
     job = None
     if payload.job_id:
         job = db.get(Job, payload.job_id)
     if not job and not payload.position_name:
         job = db.scalar(select(Job).order_by(Job.id.desc()))
+
+    recruiter = get_active_recruiter(request, db)
+    recruiter_id = (recruiter.naukri_recruiter_id if recruiter and recruiter.naukri_recruiter_id else "") or (recruiter.email if recruiter else "recruiter@cbtshire.ai")
+    recruiter_name = recruiter.name if recruiter else "Recruitment Team"
 
     title = payload.position_name or (job.title if job else "Job Position")
     location = payload.location or (job.location if job else "Location Not Specified")
@@ -179,7 +203,8 @@ def generate_naukri_job_post(payload: PlatformPostJobPayload, db: Session = Depe
         f"Location: {location}\n"
         f"Experience Required: {experience}\n"
         f"Key Skills: {skills if skills else 'Relevant Technical Skills'}\n"
-        f"Employment Type: Full Time, Permanent\n\n"
+        f"Employment Type: Full Time, Permanent\n"
+        f"Assigned Recruiter: {recruiter_name} (ID: {recruiter_id})\n\n"
         f"Job Description:\n"
         f"{job.description if job and job.description else f'We are actively seeking candidates for the position of {title} ({experience} experience) with skills in {skills}.'}\n\n"
         f"Direct Candidate Apply Link:\n"
@@ -191,6 +216,7 @@ def generate_naukri_job_post(payload: PlatformPostJobPayload, db: Session = Depe
     return {
         "status": "success",
         "platform": "Naukri e-Apps",
+        "recruiter_id": recruiter_id,
         "job": {
             "id": job.id if job else 1,
             "title": title,
@@ -205,12 +231,15 @@ def generate_naukri_job_post(payload: PlatformPostJobPayload, db: Session = Depe
     }
 
 @router.post('/integrations/indeed/post-job')
-def generate_indeed_job_post(payload: PlatformPostJobPayload, db: Session = Depends(get_db)):
+def generate_indeed_job_post(payload: PlatformPostJobPayload, request: Request, db: Session = Depends(get_db)):
     job = None
     if payload.job_id:
         job = db.get(Job, payload.job_id)
     if not job and not payload.position_name:
         job = db.scalar(select(Job).order_by(Job.id.desc()))
+
+    recruiter = get_active_recruiter(request, db)
+    employer_id = (recruiter.indeed_employer_id if recruiter and recruiter.indeed_employer_id else "") or "Cbtshire.ai Employer Portal"
 
     title = payload.position_name or (job.title if job else "Job Position")
     location = payload.location or (job.location if job else "Location Not Specified")
@@ -227,6 +256,7 @@ def generate_indeed_job_post(payload: PlatformPostJobPayload, db: Session = Depe
         f"🟠 INDEED APPLY JOB SPECIFICATION - {title}\n"
         f"----------------------------------------\n"
         f"Position: {title}\n"
+        f"Employer Account ID: {employer_id}\n"
         f"Location: {location}\n"
         f"Experience Required: {experience}\n"
         f"Job Type: Full-time\n"
@@ -242,6 +272,7 @@ def generate_indeed_job_post(payload: PlatformPostJobPayload, db: Session = Depe
     return {
         "status": "success",
         "platform": "Indeed Apply",
+        "employer_id": employer_id,
         "job": {
             "id": job.id if job else 1,
             "title": title,

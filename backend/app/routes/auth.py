@@ -7,6 +7,7 @@ from ..models import Organization, User
 from ..schemas.auth import (
     ForgotPasswordRequest,
     LoginRequest,
+    ProfileUpdateRequest,
     RegisterRequest,
     ResetPasswordRequest,
     TokenResponse,
@@ -17,7 +18,18 @@ from ..utils.security import create_access_token, hash_password, verify_password
 from ..dependencies.auth import current_user
 
 router = APIRouter(prefix='/auth', tags=['auth'])
-def response_user(user: User, organization: str) -> UserResponse: return UserResponse(id=user.id, name=user.name, email=user.email, role=user.role, organization=organization)
+def response_user(user: User, organization: str) -> UserResponse:
+    return UserResponse(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        role=user.role,
+        organization=organization,
+        linkedin_profile_url=user.linkedin_profile_url or '',
+        naukri_recruiter_id=user.naukri_recruiter_id or '',
+        indeed_employer_id=user.indeed_employer_id or '',
+        careers_page_url=user.careers_page_url or ''
+    )
 
 @router.post('/register', response_model=TokenResponse)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
@@ -35,6 +47,24 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 @router.get('/me', response_model=UserResponse)
 def me(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    organization = db.get(Organization, user.organization_id)
+    return response_user(user, organization.name if organization else 'Cbtshire.ai')
+
+@router.put('/profile', response_model=UserResponse)
+def update_profile(payload: ProfileUpdateRequest, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    if payload.name is not None:
+        user.name = payload.name.strip()
+    if payload.linkedin_profile_url is not None:
+        user.linkedin_profile_url = payload.linkedin_profile_url.strip()
+    if payload.naukri_recruiter_id is not None:
+        user.naukri_recruiter_id = payload.naukri_recruiter_id.strip()
+    if payload.indeed_employer_id is not None:
+        user.indeed_employer_id = payload.indeed_employer_id.strip()
+    if payload.careers_page_url is not None:
+        user.careers_page_url = payload.careers_page_url.strip()
+
+    db.commit()
+    db.refresh(user)
     organization = db.get(Organization, user.organization_id)
     return response_user(user, organization.name if organization else 'Cbtshire.ai')
 

@@ -1,7 +1,17 @@
 export type UserRole = 'admin' | 'recruiter' | 'interviewer';
 export type JobStatus = 'draft' | 'published' | 'closed';
 
-export interface User { id: number; name: string; email: string; role: UserRole; organization: string; }
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+  organization: string;
+  linkedin_profile_url?: string;
+  naukri_recruiter_id?: string;
+  indeed_employer_id?: string;
+  careers_page_url?: string;
+}
 export interface Job { id: number; title: string; department: string; location: string; employment_type: string; experience_level: string; status: JobStatus; applicants: number; openings: number; updated_at: string; skills: string[]; description?: string; }
 export interface Candidate {
   id: number;

@@ -18,6 +18,12 @@ def ensure_sqlite_schema() -> None:
         'jobs': {'employment_type': "VARCHAR(40) DEFAULT 'Full-time'", 'experience_level': "VARCHAR(60) DEFAULT 'Mid-level'", 'skills': "TEXT DEFAULT ''"},
         'candidates': {'role': "VARCHAR(160) DEFAULT ''", 'experience_level': "VARCHAR(60) DEFAULT 'Mid-level'", 'skills': "TEXT DEFAULT ''", 'match_score': "INTEGER DEFAULT 0"},
         'resumes': {'storage_key': "VARCHAR(500) DEFAULT ''", 'storage_url': "VARCHAR(1000) DEFAULT ''"},
+        'users': {
+            'linkedin_profile_url': "VARCHAR(255) DEFAULT ''",
+            'naukri_recruiter_id': "VARCHAR(255) DEFAULT ''",
+            'indeed_employer_id': "VARCHAR(255) DEFAULT ''",
+            'careers_page_url': "VARCHAR(255) DEFAULT ''"
+        },
     }
     inspector = inspect(engine)
     with engine.begin() as connection:
