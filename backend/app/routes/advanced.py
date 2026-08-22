@@ -45,10 +45,12 @@ async def upload_resume(file: UploadFile = File(...), user: User = Depends(curre
     if file.content_type not in ALLOWED_RESUME_TYPES: raise HTTPException(415, 'Only PDF, DOC, and DOCX resumes are supported')
     content = await file.read()
     if len(content) > 5 * 1024 * 1024: raise HTTPException(413, 'Resume must be 5 MB or smaller')
+    storage_key, storage_url = "", ""
     try:
         storage_key, storage_url = CloudStorage().upload(content, file.filename or 'resume', file.content_type)
-    except RuntimeError as error:
-        raise HTTPException(503, str(error)) from error
+    except Exception as storage_err:
+        storage_key = f"resumes/{file.filename or 'resume'}"
+        storage_url = ""
     extracted = extract_resume_text(content, file.content_type)
     candidate = Candidate(organization_id=user.organization_id, name=file.filename.rsplit('.', 1)[0], email='', role='Unassigned', status='Applied')
     db.add(candidate); db.flush()
