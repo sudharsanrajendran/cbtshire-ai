@@ -32,6 +32,10 @@ export interface Candidate {
     extracted_text?: string;
     parsed_summary?: string;
     storage_url?: string;
+    file_url?: string;
+    file_base64?: string;
+    data_uri?: string;
+    has_file?: boolean;
   };
   assessment_info?: {
     assessment_id?: number;

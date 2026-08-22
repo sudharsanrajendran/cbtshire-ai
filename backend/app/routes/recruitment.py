@@ -854,14 +854,19 @@ def serialize_candidate(candidate: Candidate, db: Session = None):
         resume_obj = db.scalar(select(Resume).where(Resume.candidate_id == candidate.id).order_by(Resume.id.desc()))
         if resume_obj:
             file_url = f"https://cbtshire-ai.onrender.com/api/public/candidates/{candidate.id}/resume-file"
+            file_b64 = getattr(resume_obj, 'file_base64', '') or ''
+            mime = resume_obj.content_type or 'application/pdf'
+            data_uri = f"data:{mime};base64,{file_b64}" if file_b64 else ""
             resume_info = {
                 'filename': resume_obj.filename,
-                'content_type': resume_obj.content_type,
+                'content_type': mime,
                 'extracted_text': resume_obj.extracted_text,
                 'parsed_summary': resume_obj.parsed_summary,
                 'storage_url': resume_obj.storage_url or file_url,
                 'file_url': file_url,
-                'has_file': bool(getattr(resume_obj, 'file_base64', None) or resume_obj.storage_url or resume_obj.extracted_text)
+                'file_base64': file_b64,
+                'data_uri': data_uri,
+                'has_file': bool(file_b64 or resume_obj.storage_url or resume_obj.extracted_text)
             }
 
     skills_list = [s.strip() for s in candidate.skills.split(',') if s.strip()] if getattr(candidate, 'skills', None) else []
