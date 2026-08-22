@@ -1,0 +1,23 @@
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.turbo
+frontend/.env.local
+
+# Python / Backend
+backend/__pycache__/
+backend/*/__pycache__/
+backend/*/*/__pycache__/
+backend/*/*/*/__pycache__/
+backend/.venv/
+backend/venv/
+backend/*.pyc
+*.pyc
+
+# Environment Secrets & DB Files
+.env
+backend/.env
+frontend/.env
+*.db
+*.sqlite
+*.sqlite3
