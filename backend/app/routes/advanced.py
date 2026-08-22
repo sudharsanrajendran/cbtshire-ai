@@ -120,7 +120,12 @@ def search(q: str, user: User = Depends(current_user), db: Session = Depends(get
 def serialize_question(item: Question): return {'id': item.id, 'prompt': item.prompt, 'question_type': item.question_type, 'options': item.options.split('|') if item.options else [], 'correct_answer': item.correct_answer, 'explanation': item.explanation}
 def serialize_event(item: HiringEvent): return {'id': item.id, 'name': item.name, 'event_type': item.event_type, 'job_id': item.job_id, 'location': item.location, 'starts_at': item.starts_at.isoformat(), 'openings': item.openings}
 def extract_resume_text(content: bytes, content_type: str) -> str:
-    if content_type == 'application/pdf': return '\n'.join(page.extract_text() or '' for page in PdfReader(BytesIO(content)).pages)[:50000]
-    if content_type.endswith('wordprocessingml.document'):
-        return '\n'.join(paragraph.text for paragraph in Document(BytesIO(content)).paragraphs)[:50000]
+    try:
+        if content_type == 'application/pdf':
+            reader = PdfReader(BytesIO(content))
+            return '\n'.join(page.extract_text() or '' for page in reader.pages)[:50000]
+        if content_type.endswith('wordprocessingml.document'):
+            return '\n'.join(paragraph.text for paragraph in Document(BytesIO(content)).paragraphs)[:50000]
+    except Exception as err:
+        print(f"[Resume Text Extraction Warning] {err}")
     return content.decode('utf-8', errors='ignore')[:50000]
