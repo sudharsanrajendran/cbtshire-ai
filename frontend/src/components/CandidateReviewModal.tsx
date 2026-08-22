@@ -100,11 +100,19 @@ export function CandidateReviewModal({
       return;
     }
 
-    // Fallback text download
+    // Fallback: download using exact resume filename without forcing .txt
     const element = document.createElement('a');
-    const fileBlob = new Blob([resumeText], { type: 'text/plain;charset=utf-8' });
+    const isDocx = resumeFilename.endsWith('.docx') || resumeFilename.endsWith('.doc');
+    const isPdf = resumeFilename.endsWith('.pdf');
+    const mime = isDocx
+      ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      : isPdf
+      ? 'application/pdf'
+      : 'text/plain;charset=utf-8';
+
+    const fileBlob = new Blob([resumeText], { type: mime });
     element.href = URL.createObjectURL(fileBlob);
-    element.download = resumeFilename.endsWith('.pdf') ? resumeFilename.replace('.pdf', '.txt') : resumeFilename;
+    element.download = resumeFilename;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
