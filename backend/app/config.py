@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     supabase_url: str = ''
     supabase_service_role_key: str = ''
     supabase_storage_bucket: str = 'cbtshire-resumes'
-    public_app_url: str = 'http://127.0.0.1:5173'
+    public_app_url: str = 'https://cbtshire-ai.vercel.app'
     smtp_host: str = ''
     smtp_port: int = 587
     smtp_username: str = ''

@@ -199,11 +199,9 @@ export function IntegrationsPage() {
     }
   };
 
-  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-  const backendBase = isLocal ? `http://${hostname}:8000/api` : 'https://cbtshire-ai.onrender.com/api';
+  const backendBase = 'https://cbtshire-ai.onrender.com/api';
   const embedSnippet = `<div id="cbtshire-careers"></div>\n<script src="${backendBase}/public/widget.js"></script>`;
-  const defaultApplyUrl = isLocal ? `http://${hostname}:5173/apply/1` : `${window.location.origin}/apply/1`;
+  const defaultApplyUrl = 'https://cbtshire-ai.vercel.app/apply/1';
 
   // Auto generated hashtag preview from user inputs
   const tagWords = (positionName + ' ' + keySkills).replace(/[/,-]/g, ' ').split(/\s+/).filter(w => w.length > 1);

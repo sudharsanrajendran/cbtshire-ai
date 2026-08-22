@@ -1,13 +1,9 @@
 import axios from 'axios';
 
-const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+// Live Production Backend API URL
+const LIVE_API_URL = 'https://cbtshire-ai.onrender.com/api';
 
-let resolvedBaseURL = import.meta.env.VITE_API_URL;
-if (!resolvedBaseURL || typeof resolvedBaseURL !== 'string' || resolvedBaseURL.trim() === '') {
-  resolvedBaseURL = isLocal ? `http://${hostname}:8000/api` : 'https://cbtshire-ai.onrender.com/api';
-}
-
+let resolvedBaseURL = import.meta.env.VITE_API_URL || LIVE_API_URL;
 resolvedBaseURL = resolvedBaseURL.trim().replace(/\/+$/, '');
 if (!resolvedBaseURL.endsWith('/api')) {
   resolvedBaseURL = `${resolvedBaseURL}/api`;

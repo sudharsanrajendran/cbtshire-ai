@@ -124,7 +124,7 @@ def generate_linkedin_job_post(payload: LinkedInPostJobPayload, request: Request
     location = payload.location or (job.location if job else "Location Not Specified")
     skills = payload.skills or (job.skills if job else "")
     experience = payload.experience or (job.experience_level if job else "Not Specified")
-    apply_url = f"http://127.0.0.1:5173/apply/{job.id if job else 1}"
+    apply_url = f"https://cbtshire-ai.vercel.app/apply/{job.id if job else 1}"
     
     desc = (payload.custom_message or payload.description or (job.description if job and job.description else "")).strip()
     desc_section = f"\n📝 Job Overview:\n{desc}\n" if desc else ""
@@ -195,7 +195,7 @@ def generate_naukri_job_post(payload: PlatformPostJobPayload, request: Request, 
     location = payload.location or (job.location if job else "Location Not Specified")
     skills = payload.skills or (job.skills if job else "")
     experience = payload.experience or (job.experience_level if job else "Not Specified")
-    apply_url = f"http://127.0.0.1:5173/apply/{job.id if job else 1}"
+    apply_url = f"https://cbtshire-ai.vercel.app/apply/{job.id if job else 1}"
 
     tag_words = [w for w in (title + ' ' + skills).replace('/', ' ').replace('-', ' ').replace(',', ' ').split() if len(w) > 1 and w.isalnum()]
     clean_tags = list(dict.fromkeys([f"#{w}" for w in tag_words]))
@@ -250,8 +250,8 @@ def generate_indeed_job_post(payload: PlatformPostJobPayload, request: Request, 
     location = payload.location or (job.location if job else "Location Not Specified")
     skills = payload.skills or (job.skills if job else "")
     experience = payload.experience or (job.experience_level if job else "Not Specified")
-    apply_url = f"http://127.0.0.1:5173/apply/{job.id if job else 1}"
-    xml_feed_url = f"http://127.0.0.1:8000/api/public/feed.xml"
+    apply_url = f"https://cbtshire-ai.vercel.app/apply/{job.id if job else 1}"
+    xml_feed_url = f"https://cbtshire-ai.onrender.com/api/public/feed.xml"
 
     tag_words = [w for w in (title + ' ' + skills).replace('/', ' ').replace('-', ' ').replace(',', ' ').split() if len(w) > 1 and w.isalnum()]
     clean_tags = list(dict.fromkeys([f"#{w}" for w in tag_words]))
@@ -307,13 +307,13 @@ def indeed_xml_feed(db: Session = Depends(get_db)):
             <department><![CDATA[{job.department}]]></department>
             <description><![CDATA[{job.description}]]></description>
             <date>{job.created_at.strftime('%Y-%m-%d')}</date>
-            <apply_url>http://127.0.0.1:5173/apply/{job.id}</apply_url>
+            <apply_url>https://cbtshire-ai.vercel.app/apply/{job.id}</apply_url>
         </job>""")
 
     xml_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <source>
     <publisher>Cbtshire.ai</publisher>
-    <publisherurl>http://127.0.0.1:5173</publisherurl>
+    <publisherurl>https://cbtshire-ai.vercel.app</publisherurl>
     <lastBuildDate>{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}</lastBuildDate>
     <jobs>
         {''.join(xml_items)}
@@ -329,7 +329,7 @@ def jobs_widget_script():
     console.log("Cbtshire.ai Careers Embed Widget Initialized");
     var container = document.getElementById("cbtshire-careers");
     if (!container) return;
-    fetch("http://127.0.0.1:8000/api/dashboard")
+    fetch("https://cbtshire-ai.onrender.com/api/dashboard")
         .then(res => res.json())
         .then(data => {
             var jobs = data.jobs || [];
@@ -338,7 +338,7 @@ def jobs_widget_script():
             jobs.forEach(function(job) {
                 html += '<li style="padding: 16px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">';
                 html += '<div><strong style="font-size: 18px;">' + job.title + '</strong><br/><span style="color: #666;">' + job.department + ' • ' + job.location + '</span></div>';
-                html += '<a href="http://127.0.0.1:5173/apply/' + job.id + '" target="_blank" style="background: #087f8c; color: white; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold;">Apply Now</a>';
+                html += '<a href="https://cbtshire-ai.vercel.app/apply/' + job.id + '" target="_blank" style="background: #087f8c; color: white; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold;">Apply Now</a>';
                 html += '</li>';
             });
             html += '</ul></div>';
