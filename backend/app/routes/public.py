@@ -30,25 +30,44 @@ async def apply(job_id: int, name: str = Form(...), email: str = Form(...), phon
         job = db.scalar(select(Job).where(Job.id == job_id, Job.status == 'published'))
         if not job: raise HTTPException(404, 'Published job not found')
         candidate = Candidate(organization_id=job.organization_id, name=name, email=email, role=job.title, status='Screening', source='Careers Portal')
+        db.add(candidate)
+        db.flush()
+
         storage_key, storage_url = "", ""
         try:
             storage_key, storage_url = CloudStorage().upload(content, file.filename or 'resume', file.content_type)
         except Exception as storage_err:
             storage_key = f"resumes/{file.filename or 'resume'}"
             storage_url = ""
-        extracted = extract_resume_text(content, file.content_type)
-        analysis = await analyze_resume(extracted)
+
+        try:
+            extracted = extract_resume_text(content, file.content_type)
+            analysis = await analyze_resume(extracted)
+        except Exception:
+            extracted = ""
+            analysis = "Candidate resume submitted for recruiter review."
+
         db.add(Resume(candidate_id=candidate.id, filename=file.filename or 'resume', content_type=file.content_type, extracted_text=extracted, parsed_summary=analysis, storage_key=storage_key, storage_url=storage_url))
+        
         assessment = db.scalar(select(Assessment).where(Assessment.organization_id == job.organization_id).order_by(Assessment.id.desc()))
         if not assessment:
-            assessment = Assessment(organization_id=job.organization_id, title=f'{job.title} screening', job_id=job.id, question_count=0, duration_minutes=30, status='published'); db.add(assessment); db.flush()
+            assessment = Assessment(organization_id=job.organization_id, title=f'{job.title} screening', job_id=job.id, question_count=0, duration_minutes=30, status='published')
+            db.add(assessment)
+            db.flush()
+            
         owner = db.scalar(select(User).where(User.organization_id == job.organization_id).order_by(User.id))
         application = Application(organization_id=job.organization_id, job_id=job.id, candidate_id=candidate.id, assessment_id=assessment.id, match_explanation=analysis, assessment_token=token_urlsafe(32), assessment_invited_at=datetime.utcnow())
         db.add(application)
-        if owner: db.add(Notification(user_id=owner.id, title='New candidate application', message=f'{name} applied for {job.title}.'))
+        if owner:
+            db.add(Notification(user_id=owner.id, title='New candidate application', message=f'{name} applied for {job.title}.'))
         db.commit()
+
         link = f"{get_settings().public_app_url}/assessment/{application.assessment_token}"
-        emailed = send_assessment_invite(email, name, job.title, link)
+        try:
+            emailed = send_assessment_invite(email, name, job.title, link)
+        except Exception:
+            emailed = False
+
         return {'application_id': application.id, 'candidate_id': candidate.id, 'assessment_link': link, 'email_sent': emailed, 'ai_summary': analysis, 'review_required': True}
 
 @router.get('/assessments/{token}')
