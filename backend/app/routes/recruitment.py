@@ -452,6 +452,60 @@ async def create_assessment_from_document(
         ]
     }
 
+@router.get('/candidates/{candidate_id}/resume-file')
+def get_recruitment_candidate_resume_file(candidate_id: int, db: Session = Depends(get_db)):
+    resume = db.scalar(select(Resume).where(Resume.candidate_id == candidate_id).order_by(Resume.id.desc()))
+    if getattr(resume, 'file_base64', None) and len(resume.file_base64) > 50:
+        try:
+            import base64
+            file_bytes = base64.b64decode(resume.file_base64)
+            return Response(
+                content=file_bytes,
+                media_type=resume.content_type or 'application/pdf',
+                headers={
+                    'Content-Disposition': f'inline; filename="{resume.filename}"'
+                }
+            )
+        except Exception:
+            pass
+            
+    if resume and resume.storage_url and resume.storage_url.startswith('http'):
+        return RedirectResponse(url=resume.storage_url)
+
+    candidate = db.scalar(select(Candidate).where(Candidate.id == candidate_id))
+    cand_name = candidate.name if candidate else "Candidate"
+    cand_role = candidate.role if candidate else "Applicant"
+    cand_email = candidate.email if candidate else ""
+    raw_text = (resume.extracted_text if resume else '') or (resume.parsed_summary if resume else '') or (candidate.skills if candidate else '') or "Resume content received."
+
+    html_doc = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>{cand_name} - Resume</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }}
+        .sheet {{ max-width: 800px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; }}
+        .header {{ border-bottom: 2px solid #0284c7; padding-bottom: 16px; margin-bottom: 24px; }}
+        .name {{ font-size: 26px; font-weight: 800; color: #0f172a; margin: 0; }}
+        .role {{ font-size: 16px; font-weight: 600; color: #0284c7; margin-top: 4px; }}
+        .contact {{ color: #64748b; font-size: 13px; margin-top: 8px; }}
+        .content {{ white-space: pre-wrap; font-size: 13.5px; line-height: 1.7; color: #334155; margin-top: 16px; }}
+    </style>
+</head>
+<body>
+    <div class="sheet">
+        <div class="header">
+            <div class="name">{cand_name}</div>
+            <div class="role">{cand_role}</div>
+            <div class="contact">Email: {cand_email} &nbsp;|&nbsp; Status: {candidate.status if candidate else 'Screening'}</div>
+        </div>
+        <div class="content">{raw_text}</div>
+    </div>
+</body>
+</html>"""
+    return Response(content=html_doc, media_type="text/html; charset=utf-8")
+
 @router.patch('/candidates/{candidate_id}/status')
 def update_candidate_status(candidate_id: int, status: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     candidate = get_org(db, Candidate, candidate_id, user.organization_id); candidate.status = status; db.commit(); db.refresh(candidate)
