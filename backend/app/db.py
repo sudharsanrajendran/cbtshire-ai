@@ -29,6 +29,50 @@ def ensure_sqlite_schema() -> None:
                 if name not in existing:
                     connection.execute(text(f'ALTER TABLE {table} ADD COLUMN {name} {definition}'))
 
+def seed_initial_data() -> None:
+    from .models import Organization, User, Job
+    from .utils.security import hash_password
+    with SessionLocal() as db:
+        org = db.query(Organization).first()
+        if not org:
+            org = Organization(name='Cbtshire.ai')
+            db.add(org)
+            db.commit()
+            db.refresh(org)
+
+        if not db.query(User).first():
+            db.add(User(
+                organization_id=org.id,
+                name='Maya Lin',
+                email='maya@cbtshire.ai',
+                password_hash=hash_password('password123'),
+                role='admin'
+            ))
+            db.add(User(
+                organization_id=org.id,
+                name='Sudharsan Admin',
+                email='sudharsankuttal03@gmail.com',
+                password_hash=hash_password('password123'),
+                role='admin'
+            ))
+            db.commit()
+
+        if not db.query(Job).first():
+            db.add(Job(
+                organization_id=org.id,
+                title='Senior Full-Stack Engineer',
+                department='Engineering',
+                location='Remote / Hybrid',
+                employment_type='Full-time',
+                experience_level='Senior-level (4-6 yrs)',
+                skills='React, TypeScript, Python, FastAPI, PostgreSQL',
+                status='published',
+                description='We are seeking an experienced Full-Stack Engineer to architect and build scalable AI-driven web applications.',
+                openings=2,
+                applicants=8
+            ))
+            db.commit()
+
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
