@@ -67,109 +67,109 @@ Respond strictly in JSON format as a list of objects with keys: prompt, options,
     except Exception as e:
         print("[Assessment Generator Exception]:", e)
 
-    # Dynamic fallback tailored question generation based on skills and difficulty
+    # Dynamic fallback question generation tailored to the user's target job role and skills
     skill_list = [s.strip() for s in skills.split(',') if s.strip()]
-    primary_skill = skill_list[0] if skill_list else 'Software Engineering'
-    second_skill = skill_list[1] if len(skill_list) > 1 else 'System Design'
-    third_skill = skill_list[2] if len(skill_list) > 2 else 'API Architecture'
+    primary_skill = skill_list[0] if skill_list else f"{job} Core Operations"
+    second_skill = skill_list[1] if len(skill_list) > 1 else "Domain Workflows & Best Practices"
+    third_skill = skill_list[2] if len(skill_list) > 2 else "Quality, Safety & Compliance"
 
     if difficulty in ['Senior', 'Lead']:
         return [
             {
-                "prompt": f"In a high-throughput production environment for a {job} position using {primary_skill}, how would you design data persistence and caching to avoid cache stampedes and database starvation?",
-                "options": "Mutex locking / probabilistic early expiration & distributed Redis caching|Disabling caching and querying database directly|Synchronous blocking loops on every missed key|Setting TTL to zero across all cache entries",
-                "correct": "Mutex locking / probabilistic early expiration & distributed Redis caching",
-                "exp": "Early probabilistic cache refresh and mutex locks prevent concurrent backend database queries when hot keys expire."
+                "prompt": f"In a demanding operational environment for a Senior {job} role involving {primary_skill}, how do you evaluate strategic trade-offs under tight constraints?",
+                "options": f"Analyze risk factors, prioritize core domain standards, and execute structured mitigation|Disregard standard guidelines and act without planning|Delegate all critical decisions to unverified external parties|Delay execution indefinitely until all uncertainty is removed",
+                "correct": f"Analyze risk factors, prioritize core domain standards, and execute structured mitigation",
+                "exp": f"Senior leadership requires systematic risk assessment and adherence to domain standards during complex scenarios."
             },
             {
-                "prompt": f"When leading architectural decisions around {second_skill} for {job} systems, which strategy best isolates fault domains during cascading microservice failures?",
-                "options": "Circuit breakers, bulkheads, and dead-letter queues|Increasing HTTP timeout limits to 5 minutes|Synchronous chain of direct REST calls without fallback|Restarting dependent containers on every 5xx response",
-                "correct": "Circuit breakers, bulkheads, and dead-letter queues",
-                "exp": "Circuit breakers fail fast and bulkheads isolate thread/connection pools to prevent system-wide resource exhaustion."
+                "prompt": f"When leading team workflows around {second_skill} for {job} operations, which approach best ensures high quality and error prevention?",
+                "options": f"Establish clear operating protocols, conduct regular quality audits, and mentor staff|Rely entirely on informal verbal instructions without documentation|Eliminate quality reviews to speed up operational turnaround|Assign complex tasks exclusively to junior personnel without supervision",
+                "correct": f"Establish clear operating protocols, conduct regular quality audits, and mentor staff",
+                "exp": f"Standardized procedures combined with quality oversight prevent operational errors."
             },
             {
-                "prompt": f"How should distributed transactions and data consistency be managed across multiple services in a {job} architecture utilizing {third_skill}?",
-                "options": "Saga pattern with compensating transactions & event-driven orchestrator|Two-phase commit (2PC) over public HTTP endpoints|Direct cross-database foreign key triggers|Ignoring partial failures and logging errors",
-                "correct": "Saga pattern with compensating transactions & event-driven orchestrator",
-                "exp": "Saga patterns allow eventual consistency and graceful rollback via compensations across distributed services."
+                "prompt": f"How should compliance, regulatory guidelines, and safety standards be integrated into {job} initiatives using {third_skill}?",
+                "options": f"Proactively align workflows with industry regulations and maintain full compliance records|Treat compliance as optional and only address violations after external audit|Bypass safety protocols during peak workload periods|Delegate regulatory accountability to third-party vendors without verification",
+                "correct": f"Proactively align workflows with industry regulations and maintain full compliance records",
+                "exp": f"Proactive regulatory alignment and documentation guarantee operational safety and legal compliance."
             },
             {
-                "prompt": f"In {primary_skill}, what is the most effective approach for zero-downtime database schema migrations for large datasets under constant write traffic?",
-                "options": "Expand/Contract (Blue-Green) pattern with backward-compatible additive columns|Locking tables during peak hours for schema rewrite|Dropping and recreating indices during runtime|Running manual SQL scripts directly in production without rollback plan",
-                "correct": "Expand/Contract (Blue-Green) pattern with backward-compatible additive columns",
-                "exp": "The Expand/Contract phase ensures older and newer application versions can run concurrently without breaking changes."
+                "prompt": f"For a {job} position focusing on {primary_skill}, what is the most effective methodology for optimizing workflow efficiency without compromising standards?",
+                "options": f"Continuous process monitoring, root cause analysis of bottlenecks, and iterative refinement|Drastically cutting essential quality steps to reduce costs|Increasing workload volume without adjusting resource allocation|Replacing established best practices with unverified methods",
+                "correct": f"Continuous process monitoring, root cause analysis of bottlenecks, and iterative refinement",
+                "exp": f"Data-driven root cause analysis enables sustainable process optimization."
             },
             {
-                "prompt": f"For a {difficulty} {job}, which observability strategy provides the fastest Mean Time to Detect (MTTD) for latency anomalies in {second_skill}?",
-                "options": "Distributed tracing with OpenTelemetry and p99 percentile latency metrics|Periodic tailing of server log files manually|Monitoring overall average CPU usage alone|Relying on end-user bug reports",
-                "correct": "Distributed tracing with OpenTelemetry and p99 percentile latency metrics",
-                "exp": "Distributed tracing tracks request spans across microservice boundaries and p99 percentiles reveal critical tail latencies."
+                "prompt": f"In senior {job} leadership, what strategy provides the most reliable evaluation of overall project or operational performance?",
+                "options": f"Tracking key performance indicators (KPIs), qualitative feedback, and compliance metrics|Relying solely on subjective personal impressions|Evaluating success based exclusively on short-term speed|Ignoring performance tracking once execution begins",
+                "correct": f"Tracking key performance indicators (KPIs), qualitative feedback, and compliance metrics",
+                "exp": f"Multi-dimensional KPI tracking provides objective insights into operational performance."
             }
         ][:count]
     elif difficulty == 'Junior':
         return [
             {
-                "prompt": f"In {primary_skill}, what is the purpose of exception handling (try/catch or try/except blocks) in a {job} application?",
-                "options": "To gracefully catch runtime errors and prevent unexpected program termination|To make code execute faster by skipping validation|To automatically fix syntax errors in source code|To hide all errors so the user never sees them",
-                "correct": "To gracefully catch runtime errors and prevent unexpected program termination",
-                "exp": "Structured error handling catches runtime exceptions and allows the application to recover or log meaningfully."
+                "prompt": f"What is the primary objective of following standard operating procedures in an entry-level {job} position involving {primary_skill}?",
+                "options": f"To ensure consistent quality, safety, and compliance across daily operations|To skip necessary validation steps|To increase operational confusion|To make tasks more complicated than required",
+                "correct": f"To ensure consistent quality, safety, and compliance across daily operations",
+                "exp": f"Standard operating procedures maintain consistency, safety, and error reduction."
             },
             {
-                "prompt": f"When working with {second_skill}, what is the primary benefit of using version control systems like Git in a {job} workflow?",
-                "options": "Tracking code history, collaborating via branches, and enabling safe rollbacks|Compiling code into machine binaries|Encrypting database connections|Hosting web servers locally",
-                "correct": "Tracking code history, collaborating via branches, and enabling safe rollbacks",
-                "exp": "Git provides distributed version control, change history, and multi-developer branch integration."
+                "prompt": f"When working with {second_skill} as a {job}, what is the best practice when encountering an unfamiliar operational problem?",
+                "options": f"Document the issue, consult standard documentation or senior team members, and follow escalation paths|Guess a solution without verifying safety guidelines|Ignore the issue and proceed as if nothing happened|Hide the problem from supervisors",
+                "correct": f"Document the issue, consult standard documentation or senior team members, and follow escalation paths",
+                "exp": f"Proper documentation and escalation prevent safety risks and ensure correct problem resolution."
             },
             {
-                "prompt": f"Which data structure in {primary_skill} provides average O(1) time complexity for key-value lookups?",
-                "options": "Hash Table / Dictionary|Singly Linked List|Unsorted Array|Binary Search Tree",
-                "correct": "Hash Table / Dictionary",
-                "exp": "Hash tables compute an index via a hashing function, allowing constant-time average access."
+                "prompt": f"Why is effective communication critical for a {job} working with {third_skill}?",
+                "options": f"Ensures accurate handoffs, aligns team goals, and prevents operational misunderstandings|Replaces the need for formal training|Eliminates the requirement for written logs|Guarantees immediate task completion without review",
+                "correct": f"Ensures accurate handoffs, aligns team goals, and prevents operational misunderstandings",
+                "exp": f"Clear communication ensures team alignment and minimizes operational errors."
             },
             {
-                "prompt": f"What is the standard HTTP status code returned by a REST API when a requested resource cannot be found?",
-                "options": "404 Not Found|200 OK|500 Internal Server Error|301 Moved Permanently",
-                "correct": "404 Not Found",
-                "exp": "404 indicates that the server cannot locate the requested URI endpoint or entity."
+                "prompt": f"What is the primary responsibility regarding safety and protocol compliance for a {job}?",
+                "options": f"Adhere strictly to safety guidelines and report hazards immediately|Follow safety rules only when observed by management|Disregard safety procedures if under time pressure|Assume someone else will handle safety measures",
+                "correct": f"Adhere strictly to safety guidelines and report hazards immediately",
+                "exp": f"Individual accountability for safety protocols is essential in all professional environments."
             },
             {
-                "prompt": f"In modern {job} software development, what does writing unit tests primarily achieve?",
-                "options": "Verifies individual units or functions produce expected outputs and guards against regressions|Replaces the need to write backend API code|Increases runtime speed in production|Eliminates the need for code styling tools",
-                "correct": "Verifies individual units or functions produce expected outputs and guards against regressions",
-                "exp": "Unit tests validate modular correctness and give confidence when refactoring or adding features."
+                "prompt": f"In {job} operations, what does quality assurance primarily focus on achieving?",
+                "options": f"Verifying that outputs meet defined standards and customer or regulatory expectations|Increasing speed regardless of errors|Minimizing documentation requirements|Reducing team collaboration",
+                "correct": f"Verifying that outputs meet defined standards and customer or regulatory expectations",
+                "exp": f"Quality assurance ensures that work products conform to established benchmarks."
             }
         ][:count]
     else: # Mid-level
         return [
             {
-                "prompt": f"In {primary_skill}, how can you optimize query performance and eliminate N+1 query problems in a {job} application?",
-                "options": "Using eager loading / joins (e.g. joinedload, selectinload) to batch fetch relationships|Running separate select queries inside a loop for each item|Removing all foreign keys from database tables|Converting all queries to raw string concatenation",
-                "correct": "Using eager loading / joins (e.g. joinedload, selectinload) to batch fetch relationships",
-                "exp": "Eager loading pre-fetches associated models in single batch queries, eliminating repetitive roundtrips."
+                "prompt": f"In {primary_skill}, how can a {job} optimize daily execution while maintaining high standards?",
+                "options": f"Streamlining redundant steps, standardizing tools, and maintaining strict quality checks|Omitting verification steps to finish faster|Working in isolation without team coordination|Changing core procedures without testing",
+                "correct": f"Streamlining redundant steps, standardizing tools, and maintaining strict quality checks",
+                "exp": f"Process optimization removes friction while maintaining quality controls."
             },
             {
-                "prompt": f"When designing RESTful APIs for {job} services in {second_skill}, what is the recommended method for handling idempotency in POST or payment requests?",
-                "options": "Requiring a unique Idempotency-Key header and tracking processed request keys|Allowing duplicate requests and overwriting records|Rejecting all retried HTTP calls with status 400|Disabling timeouts on client network requests",
-                "correct": "Requiring a unique Idempotency-Key header and tracking processed request keys",
-                "exp": "Idempotency keys ensure safe retries without unintended duplicate operations."
+                "prompt": f"When managing {second_skill} requirements for {job} tasks, how should unexpected operational changes be handled?",
+                "options": f"Assess impact, communicate adjustments to stakeholders, and follow change control procedures|Immediately reject all requested changes|Implement changes silently without informing team members|Abandon project goals completely",
+                "correct": f"Assess impact, communicate adjustments to stakeholders, and follow change control procedures",
+                "exp": f"Structured change management minimizes operational disruption."
             },
             {
-                "prompt": f"Which indexing strategy in relational databases significantly accelerates multi-column filter queries in {primary_skill}?",
-                "options": "Composite (compound) B-Tree indexes matching filter column ordering|Creating separate individual indexes on every single column|Full table scans with parallel query execution|Disabling primary keys to reduce write overhead",
-                "correct": "Composite (compound) B-Tree indexes matching filter column ordering",
-                "exp": "Composite indexes cover multi-predicate WHERE clauses efficiently when following the leftmost prefix rule."
+                "prompt": f"Which strategy best improves team productivity for a {job} working with {third_skill}?",
+                "options": f"Establishing clear role definitions, shared goals, and collaborative feedback loops|Increasing individual workload beyond capacity|Eliminating team meetings and reviews|Relying on manual effort without tools",
+                "correct": f"Establishing clear role definitions, shared goals, and collaborative feedback loops",
+                "exp": f"Clear roles and constructive feedback drive sustained team productivity."
             },
             {
-                "prompt": f"How does asynchronous non-blocking I/O improve performance in {job} applications built with {primary_skill}?",
-                "options": "Allows the event loop to handle other concurrent requests while waiting for network/disk I/O|Multiplies the CPU clock frequency of the host server|Eliminates the need for error handling and memory management|Runs all operations strictly sequentially in a single thread without yielding",
-                "correct": "Allows the event loop to handle other concurrent requests while waiting for network/disk I/O",
-                "exp": "Async I/O frees worker threads during pending I/O operations, yielding high concurrency throughput."
+                "prompt": f"How does systematic documentation benefit {job} operations in {primary_skill}?",
+                "options": f"Provides repeatable guidelines, audit trails, and seamless knowledge transfer|Adds unnecessary administrative overhead|Prevents team members from learning skills|Replaces practical operational execution",
+                "correct": f"Provides repeatable guidelines, audit trails, and seamless knowledge transfer",
+                "exp": f"Documentation preserves operational knowledge and supports compliance audits."
             },
             {
-                "prompt": f"What is the best practice for managing environment-specific configurations and credentials in {job} deployment pipelines?",
-                "options": "Injecting environment variables and secrets through secure container orchestrators (e.g., Vault, Kubernetes Secrets)|Hardcoding passwords in code repository commits|Distributing credentials via plaintext email messages|Storing configuration files directly in public web root directories",
-                "correct": "Injecting environment variables and secrets through secure container orchestrators (e.g., Vault, Kubernetes Secrets)",
-                "exp": "Externalized environment variables and secret stores keep code secure, portable, and 12-Factor compliant."
+                "prompt": f"What is the best approach for managing resource allocation in {job} projects?",
+                "options": f"Prioritizing high-impact tasks, tracking timelines, and balancing team capacity|Allocating all resources to low-priority items|Over-committing resources without buffer time|Ignoring milestone deadlines",
+                "correct": f"Prioritizing high-impact tasks, tracking timelines, and balancing team capacity",
+                "exp": f"Resource management balances workload against priority targets."
             }
         ][:count]
 

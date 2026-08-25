@@ -48,7 +48,7 @@ export function CandidateReviewModal({
 
   if (!candidate) return null;
 
-  const matchScore = candidate.match_score || 75;
+  const matchScore = candidate.match_score || 0;
   const isShortlisted = matchScore >= 70;
   const resumeFilename = candidate.resume_info?.filename || `${candidate.name.replace(/\s+/g, '_')}_Resume.pdf`;
   const resumeText = candidate.resume_info?.extracted_text || candidate.resume_info?.parsed_summary || candidate.match_explanation || 'No resume content recorded for this candidate.';

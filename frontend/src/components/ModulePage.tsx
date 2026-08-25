@@ -227,13 +227,18 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
       });
       if (res.skills && res.skills.length > 0) {
         setSuggestedSkillsList(res.skills);
+        // Auto-select all suggested skills into the skills field
+        setForm((cur) => ({ ...cur, skills: res.skills.join(', ') }));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Suggest skills error:", err);
+      const serverMsg = err?.response?.data?.detail;
+      setDialogError(serverMsg || 'Could not fetch AI skill suggestions. Please check your Gemini API key in Settings.');
     } finally {
       setSuggestingSkills(false);
     }
   };
+
 
   const toggleSkill = (skillName: string) => {
     const currentSkills = (form.skills || '')
@@ -844,6 +849,7 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
     const skillsVal = (targetForm.skills || '').trim();
     const expVal = (targetForm.experience_level || '').trim();
     const deptVal = (targetForm.department || '').trim();
+    const locVal = (targetForm.location || '').trim();
 
     if (!titleVal) {
       setDialogError('Please enter a Job Title first to generate a domain-tailored description.');
@@ -852,18 +858,18 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
     setDialogError(null);
     setAiLoading(true);
     try {
-      const activeSkills = skillsVal;
-
       const result = await generateJobDescription({
         title: titleVal,
         experience: expVal || 'Mid-level',
-        skills: activeSkills,
-        department: deptVal || ''
+        skills: skillsVal,
+        department: deptVal || '',
+        location: locVal || ''
       });
       setForm((current) => ({ ...current, description: result.content }));
     } catch (err: any) {
       console.error(err);
-      setDialogError('Could not generate description automatically.');
+      const serverMsg = err?.response?.data?.detail;
+      setDialogError(serverMsg || 'Could not generate description. Please check your Gemini API key in Settings.');
     } finally {
       setAiLoading(false);
     }
@@ -1314,85 +1320,191 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
 
       {/* 1. Job / Candidate / Record Creation & Edit Dialog */}
       <Dialog open={open} onClose={handleCloseDialog} fullWidth maxWidth="sm">
-        <DialogTitle>{editingJob ? 'Edit Job' : action}</DialogTitle>
+        <DialogTitle sx={{ pb: 0.5 }}>
+          <Stack direction="row" alignItems="center" gap={1}>
+            <AutoAwesomeRoundedIcon sx={{ color: '#087f8c', fontSize: 22 }} />
+            <Typography variant="h6" fontWeight={800}>{editingJob ? 'Edit Job' : action}</Typography>
+          </Stack>
+          {kind === 'jobs' && (
+            <Typography variant="caption" color="text.secondary">
+              Fill in the details below — Gemini AI will suggest market skills &amp; generate description
+            </Typography>
+          )}
+        </DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            {dialogError && <Alert severity="error">{dialogError}</Alert>}
+          <Stack spacing={2} sx={{ pt: 1.5 }}>
+            {dialogError && <Alert severity="error" onClose={() => setDialogError(null)}>{dialogError}</Alert>}
 
             {kind === 'jobs' && (
               <>
-                <TextField label="Job title" required value={form.title ?? ''} onChange={set('title')} placeholder="e.g. Senior Flutter Developer or MRO Engineer Aviation" />
-                <TextField label="Department" value={form.department ?? ''} onChange={set('department')} placeholder="e.g. Aerospace / Mobile Engineering / Operations" />
-                <TextField label="Location" value={form.location ?? ''} onChange={set('location')} placeholder="e.g. Chennai, India (Hybrid)" />
-                <TextField label="Experience level" value={form.experience_level ?? ''} onChange={set('experience_level')} placeholder="e.g. 3-5 years" />
+                {/* ── Section 1: Role Info ── */}
                 <Box>
-                  <TextField fullWidth label="Skills, comma separated" value={form.skills ?? ''} onChange={set('skills')} placeholder="e.g. Aircraft Maintenance, FAA / EASA Regulations, Avionics" />
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Enter domain skills or click button to suggest market skills for "{form.title || 'Role'}".
-                    </Typography>
-                    <Button
-                      size="small"
-                      variant="text"
-                      startIcon={suggestingSkills ? <CircularProgress size={13} color="inherit" /> : <AutoAwesomeRoundedIcon sx={{ fontSize: 16 }} />}
-                      onClick={() => void handleSuggestSkills()}
-                      disabled={suggestingSkills}
-                      sx={{ fontWeight: 800, color: '#087f8c', textTransform: 'none', py: 0.2, fontSize: '0.78rem' }}
-                    >
-                      {suggestingSkills ? 'Deducing Market Skills...' : '⚡ AI Suggest Market Skills'}
-                    </Button>
+                  <Typography variant="overline" sx={{ color: '#087f8c', fontWeight: 800, fontSize: 10, letterSpacing: '.1em' }}>
+                    Role Information
+                  </Typography>
+                  <Stack spacing={1.5} sx={{ mt: 0.5 }}>
+                    <TextField
+                      label="Job Title"
+                      required
+                      fullWidth
+                      value={form.title ?? ''}
+                      onChange={set('title')}
+                      placeholder="e.g. Senior Flutter Developer, MRO Engineer, Data Scientist"
+                      helperText="Enter the exact job title — Gemini uses this to suggest accurate market skills"
+                    />
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                      <TextField
+                        label="Experience Level"
+                        fullWidth
+                        value={form.experience_level ?? ''}
+                        onChange={set('experience_level')}
+                        placeholder="e.g. 3–5 years, Senior, Mid-level"
+                      />
+                      <TextField
+                        label="Location"
+                        fullWidth
+                        value={form.location ?? ''}
+                        onChange={set('location')}
+                        placeholder="e.g. Chennai, India (Hybrid)"
+                      />
+                    </Stack>
+                    <TextField
+                      label="Department"
+                      fullWidth
+                      value={form.department ?? ''}
+                      onChange={set('department')}
+                      placeholder="e.g. Engineering, Operations, Healthcare, Finance"
+                    />
                   </Stack>
-
-                  {suggestedSkillsList.length > 0 && (
-                    <Paper variant="outlined" sx={{ p: 1.5, mt: 1.5, bgcolor: '#f0fdf4', borderColor: '#86efac', borderRadius: 2 }}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                        <Typography variant="caption" fontWeight={800} color="#15803d">
-                          💡 Tap skill to add or remove from job requirements:
-                        </Typography>
-                        <Button size="small" onClick={() => setSuggestedSkillsList([])} sx={{ fontSize: 11, py: 0, color: '#64748b', textTransform: 'none' }}>
-                          ✕ Clear Suggestions
-                        </Button>
-                      </Stack>
-                      <Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap sx={{ gap: 0.8 }}>
-                        {suggestedSkillsList.map((skill) => {
-                          const currentSkills = (form.skills || '').split(',').map((s) => s.trim().toLowerCase());
-                          const isSelected = currentSkills.includes(skill.toLowerCase());
-                          return (
-                            <Chip
-                              key={skill}
-                              label={skill}
-                              clickable
-                              color={isSelected ? 'success' : 'default'}
-                              variant={isSelected ? 'filled' : 'outlined'}
-                              onClick={() => toggleSkill(skill)}
-                              onDelete={isSelected ? () => toggleSkill(skill) : undefined}
-                              sx={{
-                                fontWeight: 700,
-                                fontSize: 12,
-                                cursor: 'pointer',
-                                bgcolor: isSelected ? '#15803d' : '#ffffff',
-                                color: isSelected ? '#ffffff' : '#1e293b',
-                                '&:hover': {
-                                  bgcolor: isSelected ? '#166534' : '#f1f5f9'
-                                }
-                              }}
-                            />
-                          );
-                        })}
-                      </Stack>
-                    </Paper>
-                  )}
                 </Box>
 
-                <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f0fdfa', borderColor: '#99f6e4', borderRadius: 2 }}>
-                  <Stack spacing={1.5}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <AutoAwesomeRoundedIcon sx={{ color: '#087f8c' }} />
-                        <Typography variant="subtitle2" fontWeight={800} color="#087f8c">
-                          AI Job Description Generator
-                        </Typography>
-                      </Box>
+                <Divider />
+
+                {/* ── Section 2: Skills ── */}
+                <Box>
+                  <Typography variant="overline" sx={{ color: '#087f8c', fontWeight: 800, fontSize: 10, letterSpacing: '.1em' }}>
+                    Skills &amp; Requirements
+                  </Typography>
+                  <Stack spacing={1} sx={{ mt: 0.5 }}>
+                    <TextField
+                      fullWidth
+                      label="Skills (comma separated)"
+                      value={form.skills ?? ''}
+                      onChange={set('skills')}
+                      placeholder="Type skills manually, or use AI Suggest below"
+                    />
+
+                    {/* AI Suggest Skills Button */}
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      startIcon={suggestingSkills ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeRoundedIcon />}
+                      onClick={() => void handleSuggestSkills()}
+                      disabled={suggestingSkills || !(form.title ?? '').trim()}
+                      sx={{
+                        fontWeight: 800,
+                        borderColor: '#087f8c',
+                        color: '#087f8c',
+                        borderRadius: 2,
+                        py: 1,
+                        textTransform: 'none',
+                        '&:hover': { bgcolor: '#f0fdfa', borderColor: '#06646f' },
+                        '&.Mui-disabled': { borderColor: '#cbd5e1', color: '#94a3b8' }
+                      }}
+                    >
+                      {suggestingSkills
+                        ? 'Gemini is finding market skills...'
+                        : `✨ AI Suggest Current Market Skills${form.title ? ` for "${form.title}"` : ' (enter title first)'}`}
+                    </Button>
+
+                    {/* Suggested Skills Chips */}
+                    {suggestedSkillsList.length > 0 && (
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          bgcolor: '#f0fdf4',
+                          borderColor: '#6ee7b7',
+                          borderRadius: 2.5,
+                          animation: 'fadeIn 0.3s ease'
+                        }}
+                      >
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.2 }}>
+                          <Stack direction="row" alignItems="center" gap={0.8}>
+                            <AutoAwesomeRoundedIcon sx={{ fontSize: 16, color: '#15803d' }} />
+                            <Typography variant="caption" fontWeight={800} color="#15803d">
+                              Gemini suggests these current market skills — tap to add/remove:
+                            </Typography>
+                          </Stack>
+                          <Button
+                            size="small"
+                            onClick={() => setSuggestedSkillsList([])}
+                            sx={{ fontSize: 11, py: 0, minWidth: 0, color: '#64748b', textTransform: 'none' }}
+                          >
+                            ✕ Clear
+                          </Button>
+                        </Stack>
+                        <Stack direction="row" flexWrap="wrap" useFlexGap sx={{ gap: 0.8 }}>
+                          {suggestedSkillsList.map((skill) => {
+                            const currentSkills = (form.skills || '').split(',').map((s) => s.trim().toLowerCase());
+                            const isSelected = currentSkills.includes(skill.toLowerCase());
+                            return (
+                              <Chip
+                                key={skill}
+                                label={skill}
+                                clickable
+                                onClick={() => toggleSkill(skill)}
+                                onDelete={isSelected ? () => toggleSkill(skill) : undefined}
+                                sx={{
+                                  fontWeight: 700,
+                                  fontSize: 12,
+                                  cursor: 'pointer',
+                                  bgcolor: isSelected ? '#15803d' : '#ffffff',
+                                  color: isSelected ? '#ffffff' : '#1e293b',
+                                  border: '1px solid',
+                                  borderColor: isSelected ? '#15803d' : '#a7f3d0',
+                                  '&:hover': {
+                                    bgcolor: isSelected ? '#166534' : '#ecfdf5',
+                                    borderColor: '#15803d'
+                                  }
+                                }}
+                              />
+                            );
+                          })}
+                        </Stack>
+
+                        {/* Generate Description CTA — appears after skills suggested */}
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          startIcon={aiLoading ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeRoundedIcon />}
+                          onClick={() => void generateDescription()}
+                          disabled={aiLoading}
+                          sx={{
+                            mt: 1.5,
+                            fontWeight: 800,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            bgcolor: '#087f8c',
+                            '&:hover': { bgcolor: '#06646f' }
+                          }}
+                        >
+                          {aiLoading ? 'Gemini is writing the description...' : '✨ Generate Job Description with Selected Skills'}
+                        </Button>
+                      </Paper>
+                    )}
+                  </Stack>
+                </Box>
+
+                <Divider />
+
+                {/* ── Section 3: Job Description ── */}
+                <Box>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+                    <Typography variant="overline" sx={{ color: '#087f8c', fontWeight: 800, fontSize: 10, letterSpacing: '.1em' }}>
+                      Job Description
+                    </Typography>
+                    <Stack direction="row" alignItems="center" gap={1}>
                       <FormControlLabel
                         control={
                           <Switch
@@ -1402,35 +1514,42 @@ export function ModulePage({ kind }: { kind: ModuleKind }) {
                             color="primary"
                           />
                         }
-                        label={<Typography variant="caption" fontWeight={600}>Auto-fill</Typography>}
+                        label={<Typography variant="caption" fontWeight={600} color="text.secondary">Auto-generate as I type</Typography>}
+                        sx={{ m: 0 }}
                       />
+                      {!suggestedSkillsList.length && (
+                        <Button
+                          size="small"
+                          variant="text"
+                          startIcon={aiLoading ? <CircularProgress size={13} color="inherit" /> : <AutoAwesomeRoundedIcon sx={{ fontSize: 15 }} />}
+                          onClick={() => void generateDescription()}
+                          disabled={aiLoading || !(form.title ?? '').trim()}
+                          sx={{ fontWeight: 800, color: '#087f8c', textTransform: 'none', fontSize: '0.76rem', py: 0.3 }}
+                        >
+                          {aiLoading ? 'Generating...' : '⚡ Generate'}
+                        </Button>
+                      )}
                     </Stack>
-                    <Typography variant="caption" color="text.secondary">
-                      Automatically generates a structured job description based on your entered <b>Job Title</b>, <b>Experience Level</b>, and <b>Skills</b>.
-                    </Typography>
-
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={aiLoading ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeRoundedIcon />}
-                      onClick={() => void generateDescription()}
-                      disabled={aiLoading}
-                      sx={{ bgcolor: '#087f8c', '&:hover': { bgcolor: '#06646f' } }}
-                    >
-                      {aiLoading ? 'Generating Description...' : '⚡ Generate / Refresh Description'}
-                    </Button>
                   </Stack>
-                </Paper>
+                  <TextField
+                    fullWidth
+                    label="Job Description"
+                    multiline
+                    minRows={7}
+                    value={form.description ?? ''}
+                    onChange={set('description')}
+                    placeholder="Click '⚡ Generate' or the button above to have Gemini write a professional job description based on the role details..."
+                  />
+                </Box>
 
-                <TextField 
-                  label="Job Description" 
-                  multiline 
-                  minRows={6} 
-                  value={form.description ?? ''} 
-                  onChange={set('description')} 
-                  placeholder="Job description will automatically generate here based on title, experience, and skills..." 
+                <TextField
+                  label="Number of Openings"
+                  type="number"
+                  value={form.openings ?? 1}
+                  onChange={set('openings')}
+                  inputProps={{ min: 1 }}
+                  sx={{ maxWidth: 180 }}
                 />
-                <TextField label="Openings" type="number" value={form.openings ?? 1} onChange={set('openings')} />
               </>
             )}
             {kind === 'candidates' && (
